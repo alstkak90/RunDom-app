@@ -1,0 +1,1979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Rundom</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Rundom" />
+  <link rel="apple-touch-icon" href="/icon.svg" />
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+  <style>
+    :root {
+      --bg:       #080c1a;
+      --surface:  #0f1629;
+      --surface2: #1a2540;
+      --border:   rgba(255,255,255,0.08);
+      --accent:   #FFE44D;
+      --accent2:  #5BB4D8;
+      --cyan:     #38bdf8;
+      --green:    #4ade80;
+      --gold:     #fbbf24;
+      --text:     #ffffff;
+      --muted:    #7a9cc0;
+      --dim:      #3d5270;
+      --tab-h:    56px;
+      --header-h: 0px;
+      --bottom-bar-h: 80px;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+    body {
+      font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ════════════════════════════════ HEADER (Map Overlay) */
+    header {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      background: linear-gradient(to bottom, rgba(8,12,26,0.94), transparent);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: env(safe-area-inset-top, 12px) 16px 20px;
+      padding-top: max(env(safe-area-inset-top, 12px), 12px);
+      flex-shrink: 0;
+      z-index: 100;
+      pointer-events: none;
+    }
+    header > * { pointer-events: auto; }
+
+    .logo-pill {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(15,22,41,0.88);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 9999px;
+      padding: 6px 14px 6px 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+    .logo-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #FFE44D, #f59e0b);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      color: #0a0c1a;
+      border: 2px solid rgba(255,228,77,0.3);
+      box-shadow: 0 0 12px rgba(255,228,77,0.35);
+    }
+    .logo-info { display: flex; flex-direction: column; }
+    .logo-level { font-size: 0.6rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; }
+    .logo-text { font-size: 0.9rem; font-weight: 800; color: var(--text); letter-spacing: -0.3px; line-height: 1; }
+    .logo-text em { color: var(--accent); font-style: normal; }
+
+    .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+
+    .badge-pill {
+      display: flex; align-items: center; gap: 5px;
+      background: rgba(15,22,41,0.88);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,228,77,0.2);
+      border-radius: 12px;
+      padding: 5px 10px;
+      font-size: 0.72rem;
+      color: var(--muted);
+      cursor: pointer;
+      transition: border-color 0.2s;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+    .badge-pill:hover { border-color: rgba(255,228,77,0.5); }
+    .badge-pill span { color: var(--accent); font-weight: 700; }
+
+    .area-pill {
+      display: flex; align-items: center; gap: 5px;
+      background: rgba(15,22,41,0.88);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,228,77,0.2);
+      border-radius: 12px;
+      padding: 5px 10px;
+      font-size: 0.72rem;
+      color: var(--muted);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+    .area-pill .area-val { color: var(--accent); font-weight: 700; font-size: 0.8rem; }
+
+    #btn-install-hdr {
+      display: none;
+      background: var(--accent);
+      color: #0a0c1a;
+      border: none;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 5px 12px;
+      cursor: pointer;
+    }
+
+    /* ════════════════════════════════ MAIN AREA */
+    #main {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ════════════════════════════════ MAP (fullscreen) */
+    #map {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      transition: opacity 0.2s;
+    }
+    .leaflet-control-zoom { display: none !important; }
+
+    /* ════════════════════════════════ MAP FLOAT CONTROLS */
+    .map-controls {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 500;
+    }
+    .map-ctrl-btn {
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      background: rgba(15,22,41,0.92);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,228,77,0.18);
+      color: var(--text);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      transition: transform 0.15s, background 0.15s;
+    }
+    .map-ctrl-btn:active { transform: scale(0.9); }
+    .map-ctrl-btn .material-symbols-outlined { font-size: 20px; }
+
+    /* ════════════════════════════════ LIVE HUD (top stats grid) */
+    #live-hud {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      background: linear-gradient(to bottom, rgba(8,12,26,0.94), transparent);
+      padding: max(env(safe-area-inset-top, 12px), 12px) 16px 24px;
+      display: none;
+      z-index: 500;
+    }
+    #live-hud.visible { display: block; }
+    .hud-zone-label {
+      font-size: 0.68rem; font-weight: 700; color: var(--accent);
+      text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px;
+    }
+    .hud-zone-name {
+      font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 14px;
+    }
+    .hud-grid {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+    }
+    .hud-card {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: rgba(15,22,41,0.82);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,228,77,0.14);
+      border-radius: 16px;
+      padding: 12px 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .hud-item { display:flex; flex-direction:column; align-items:center; gap:2px; }
+    .hud-val  { font-size:1.6rem; font-weight:800; color:var(--text); line-height:1; letter-spacing:-0.5px; }
+    .hud-lbl  { font-size:0.6rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; font-weight:500; }
+
+    /* ════════════════════════════════ CLOSE HINT */
+    #close-hint {
+      position: absolute;
+      top: 140px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255,228,77,0.92);
+      backdrop-filter: blur(8px);
+      color: #0a0c1a;
+      font-size: 0.8rem;
+      font-weight: 800;
+      padding: 8px 18px;
+      border-radius: 9999px;
+      display: none;
+      z-index: 600;
+      white-space: nowrap;
+      animation: pulse-hint 1.5s ease-in-out infinite;
+      box-shadow: 0 0 20px rgba(255,228,77,0.5);
+    }
+    @keyframes pulse-hint {
+      0%,100% { box-shadow: 0 0 15px rgba(255,228,77,0.5); }
+      50% { box-shadow: 0 0 32px rgba(255,228,77,0.85); }
+    }
+
+    /* ════════════════════════════════ BOTTOM PILL BAR */
+    #bottom-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 700;
+      padding: 0 16px env(safe-area-inset-bottom, 12px);
+      pointer-events: none;
+      background: linear-gradient(to top, rgba(8,12,26,0.97), transparent);
+    }
+    #bottom-bar > * { pointer-events: auto; }
+
+    .pill-bar {
+      background: rgba(15,22,41,0.94);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,228,77,0.18);
+      border-radius: 2.5rem;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      max-width: 400px;
+      margin: 0 auto;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+
+    .pill-stat {
+      flex: 1;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 8px 4px;
+    }
+    .pill-stat-label { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-weight: 500; }
+    .pill-stat-val { font-size: 1.1rem; font-weight: 800; color: var(--text); line-height: 1.2; }
+    .pill-stat-val .unit { font-size: 0.65rem; font-weight: 400; color: var(--dim); margin-left: 1px; }
+
+    /* START button */
+    .btn-start {
+      position: relative;
+      flex-shrink: 0;
+      border: none; cursor: pointer;
+      background: none; padding: 0;
+    }
+    .btn-start-glow {
+      position: absolute; inset: -4px;
+      background: linear-gradient(135deg, #FFE44D, #f59e0b);
+      border-radius: 9999px;
+      opacity: 0.45;
+      filter: blur(8px);
+      transition: opacity 0.3s;
+    }
+    .btn-start:hover .btn-start-glow { opacity: 0.75; }
+    .btn-start-inner {
+      position: relative;
+      background: linear-gradient(135deg, #FFE44D, #f59e0b);
+      color: #0a0c1a;
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: 2px;
+      padding: 14px 28px;
+      border-radius: 9999px;
+      display: flex; align-items: center; gap: 6px;
+      border: 1px solid rgba(255,255,255,0.15);
+      box-shadow: 0 0 20px rgba(255,228,77,0.4);
+      transition: transform 0.15s;
+    }
+    .btn-start:active .btn-start-inner { transform: scale(0.95); }
+    .btn-start .material-symbols-outlined { font-size: 22px; }
+
+    /* STOP button */
+    .btn-stop {
+      position: relative;
+      flex-shrink: 0;
+      border: none; cursor: pointer;
+      background: none; padding: 0;
+      margin: -16px 4px;
+    }
+    .btn-stop-glow {
+      position: absolute; inset: 0;
+      background: var(--accent2);
+      border-radius: 2rem;
+      animation: stop-pulse 2s ease-in-out infinite;
+    }
+    @keyframes stop-pulse {
+      0%,100% { box-shadow: 0 0 15px rgba(91,180,216,0.45); }
+      50% { box-shadow: 0 0 32px rgba(91,180,216,0.85); }
+    }
+    .btn-stop-inner {
+      position: relative;
+      background: linear-gradient(135deg, #5BB4D8, #0ea5e9);
+      color: #0a0c1a;
+      padding: 16px 28px;
+      border-radius: 1.8rem;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .btn-stop-inner .material-symbols-outlined { font-size: 28px; }
+    .btn-stop-inner span:last-child { font-size: 0.65rem; font-weight: 800; letter-spacing: 2px; margin-top: 2px; }
+    .btn-stop:active .btn-stop-inner { transform: scale(0.95); }
+
+    /* Side action buttons in pill bar */
+    .pill-action {
+      flex: 1; height: 48px;
+      border-radius: 9999px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 2px;
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); transition: color 0.15s;
+    }
+    .pill-action:hover { color: var(--text); }
+    .pill-action .material-symbols-outlined { font-size: 22px; }
+    .pill-action span:last-child { font-size: 0.55rem; font-weight: 600; letter-spacing: 0.5px; }
+
+    /* ════════════════════════════════ TAB BAR (icon only, inside bottom area) */
+    .tab-row {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 0 4px;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+    .tab {
+      flex: 1;
+      display: flex;
+      align-items: center; justify-content: center;
+      border: none;
+      background: none;
+      cursor: pointer;
+      color: var(--dim);
+      transition: color 0.15s;
+      padding: 6px 0;
+    }
+    .tab .material-symbols-outlined { font-size: 22px; }
+    .tab.active { color: var(--accent); }
+    .tab.active .material-symbols-outlined { font-variation-settings: 'FILL' 1; }
+
+    /* Hide old elements */
+    .tab .tab-icon { display: none; }
+    #fab { display: none !important; }
+    #tab-bar { display: none !important; }
+
+    /* ════════════════════════════════ PANELS */
+    .panel {
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+      z-index: 200;
+      overflow-y: auto;
+      display: none;
+      flex-direction: column;
+      animation: panelIn 0.25s ease-out;
+    }
+    .panel.open { display: flex; }
+    @keyframes panelIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+
+    .panel-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,228,77,0.15);
+      flex-shrink: 0;
+    }
+    .panel-back {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .panel-back:active { background: var(--surface2); }
+    .panel-back .material-symbols-outlined { font-size: 20px; }
+    .panel-title { font-size: 1rem; font-weight: 700; color: var(--text); }
+
+    .panel-body { padding: 20px 16px 120px; display: flex; flex-direction: column; gap: 16px; }
+
+    .section-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      margin-bottom: 8px;
+    }
+
+    /* ════════════════════════════════ STAT CARDS */
+    .card-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid rgba(255,228,77,0.14);
+      border-radius: 16px;
+      padding: 16px;
+      backdrop-filter: blur(8px);
+    }
+    .stat-card .s-label { font-size:0.65rem; color:var(--muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px; }
+    .stat-card .s-value { font-size:1.5rem; font-weight:800; color:var(--text); line-height:1; }
+    .stat-card .s-unit  { font-size:0.72rem; color:var(--muted); font-weight:400; margin-left:2px; }
+
+    /* ════════════════════════════════ CHART */
+    .chart-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    #chart-canvas { display:block; width:100%; }
+    .chart-empty {
+      text-align:center; color:var(--dim);
+      font-size:0.82rem; padding:36px 0;
+    }
+
+    /* ════════════════════════════════ RECORDS */
+    .record-list {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .record-row {
+      display:flex; justify-content:space-between; align-items:center;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.84rem;
+    }
+    .record-row:last-child { border-bottom:none; }
+    .record-row .rk { color:var(--muted); }
+    .record-row .rv { color:var(--text); font-weight:700; }
+
+    /* ════════════════════════════════ HISTORY LIST */
+    .history-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .history-item:hover { border-color: rgba(255,255,255,0.2); }
+
+    .hi-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .hi-info { flex:1; }
+    .hi-date { font-size:0.7rem; color:var(--muted); margin-bottom:3px; }
+    .hi-stats { display:flex; gap:14px; font-size:0.84rem; }
+    .hi-stats strong { color:var(--text); font-weight:700; }
+    .hi-stats span   { color:var(--muted); }
+
+    /* ════════════════════════════════ BADGE GRID */
+    .badge-progress { font-size:0.75rem; color:var(--muted); margin-bottom:10px; }
+    .badge-progress strong { color:var(--gold); }
+
+    .badge-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .badge-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 6px;
+      display:flex; flex-direction:column; align-items:center; gap:4px;
+      text-align: center;
+    }
+    .badge-item.locked { opacity:.3; filter:grayscale(1); }
+    .badge-icon { font-size:1.5rem; line-height:1; }
+    .badge-name { font-size:0.6rem; color:var(--muted); line-height:1.2; }
+    .badge-item.unlocked .badge-name { color:var(--text); }
+    .badge-item.unlocked { border-color: rgba(255,255,255,0.15); }
+
+    /* ════════════════════════════════ RESULT POPUP */
+    #result-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+    #result-overlay.open { display:flex; }
+
+    .result-card {
+      background: var(--surface);
+      border: 1px solid rgba(255,228,77,0.5);
+      border-radius: 24px;
+      padding: 28px 32px;
+      text-align: center;
+      width: min(320px, 90vw);
+      box-shadow: 0 0 50px rgba(255,228,77,0.2);
+      animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes popIn { from{opacity:0;transform:scale(0.8)} to{opacity:1;transform:scale(1)} }
+
+    .result-emoji { font-size:2.8rem; margin-bottom:8px; }
+    .result-title { font-size:1.2rem; font-weight:800; color:var(--text); margin-bottom:16px; }
+
+    .result-stats { display:flex; gap:20px; justify-content:center; margin-bottom:20px; }
+    .result-stat  { display:flex; flex-direction:column; align-items:center; gap:2px; }
+    .result-stat .val { font-size:1.4rem; font-weight:800; color:var(--text); }
+    .result-stat .lbl { font-size:0.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; }
+
+    #btn-dismiss {
+      background: linear-gradient(135deg, #FFE44D, #f59e0b);
+      color:#0a0c1a; border:none;
+      border-radius:9999px;
+      font-size:0.95rem; font-weight:800;
+      padding:12px 32px;
+      cursor:pointer;
+      width:100%;
+      box-shadow: 0 0 20px rgba(255,228,77,0.35);
+      transition: transform 0.15s;
+    }
+    #btn-dismiss:active { transform: scale(0.97); }
+
+    /* ════════════════════════════════ ACHIEVEMENT TOAST */
+    #achievement-toast {
+      display:none;
+      position:fixed;
+      top: 16px;
+      left:50%; transform:translateX(-50%);
+      background: rgba(15,22,41,0.97);
+      backdrop-filter: blur(12px);
+      border:1px solid rgba(255,228,77,0.5);
+      border-radius:16px;
+      padding:12px 16px;
+      z-index:4000;
+      min-width:240px; max-width:300px;
+      box-shadow:0 4px 24px rgba(255,228,77,0.15), 0 4px 24px rgba(0,0,0,0.5);
+      animation:toastIn 0.3s ease-out;
+    }
+    @keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(-10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+    .toast-top { font-size:0.68rem; color:var(--accent); font-weight:700; margin-bottom:8px; letter-spacing:0.5px; }
+    .toast-row { display:flex; align-items:center; gap:10px; }
+    .toast-big { font-size:2rem; }
+    .toast-name{ font-size:0.92rem; font-weight:700; color:var(--text); }
+    .toast-desc{ font-size:0.72rem; color:var(--muted); margin-top:2px; }
+
+    /* ════════════════════════════════ STATUS BAR (map overlay) */
+    #status-bar {
+      position:absolute;
+      top:8px; left:50%;
+      transform:translateX(-50%);
+      background:rgba(8,12,26,0.87);
+      backdrop-filter:blur(12px);
+      border:1px solid rgba(255,228,77,0.18);
+      border-radius:9999px;
+      padding:5px 14px;
+      font-size:0.72rem;
+      color:var(--muted);
+      z-index:90;
+      white-space:nowrap;
+      pointer-events:none;
+    }
+
+    .dot-pulse {
+      display:inline-block; width:7px; height:7px;
+      border-radius:50%; background:var(--accent);
+      margin-right:5px;
+      animation:pulse 1.2s ease-in-out infinite;
+      vertical-align:middle;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+    /* ════════════════════════════════ MULTIPLAYER */
+    .mp-notice {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 16px;
+      font-size: 0.84rem; color: var(--muted); line-height: 1.6;
+      margin-bottom: 12px;
+    }
+    .mp-notice a { color: var(--accent); }
+    .mp-code-block {
+      background: #120a0c; border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px;
+      font-family: 'Space Grotesk', monospace; font-size: 0.72rem;
+      color: #7ee787; line-height: 1.7;
+      overflow-x: auto; white-space: pre;
+    }
+
+    .mp-input {
+      width: 100%; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 14px;
+      color: var(--text); font-size: 0.9rem;
+      padding: 12px 14px; outline: none;
+      font-family: 'Space Grotesk', sans-serif;
+      transition: border-color 0.2s;
+    }
+    .mp-input:focus { border-color: var(--accent); }
+    .mp-input::placeholder { color: var(--dim); }
+
+    .mp-btn {
+      width: 100%; border: none; border-radius: 14px;
+      font-size: 0.9rem; font-weight: 700;
+      padding: 12px; cursor: pointer;
+      font-family: 'Space Grotesk', sans-serif;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .mp-btn:active { transform: scale(0.97); }
+    .mp-btn-primary  { background: linear-gradient(135deg, #FFE44D, #f59e0b); color: #0a0c1a; box-shadow: 0 0 15px rgba(255,228,77,0.3); font-weight: 800; }
+    .mp-btn-secondary{ background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .mp-btn-danger   { background: none; color: #ef4444; border: 1px solid #ef4444; }
+
+    .mp-join-row { display: flex; gap: 8px; }
+    .mp-join-row .mp-input { flex: 1; text-transform: uppercase; letter-spacing: 2px; font-weight: 700; }
+    .mp-join-row .mp-btn   { width: auto; padding: 12px 18px; flex-shrink: 0; }
+
+    .mp-room-code-box {
+      background: var(--surface); border: 2px solid rgba(255,228,77,0.45);
+      border-radius: 20px; padding: 18px;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 0 25px rgba(255,228,77,0.12);
+    }
+    .mp-room-code-val {
+      font-size: 2rem; font-weight: 900; letter-spacing: 6px; color: var(--text);
+    }
+    .mp-copy-btn {
+      background: var(--accent); color: #fff; border: none;
+      border-radius: 12px; font-size: 0.8rem; font-weight: 700;
+      padding: 8px 14px; cursor: pointer;
+    }
+    .mp-hint { font-size: 0.75rem; color: var(--dim); text-align: center; margin-top: 8px; }
+
+    .mp-player-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 16px; border-bottom: 1px solid var(--border);
+    }
+    .mp-player-row:last-child { border-bottom: none; }
+    .mp-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+    .mp-player-info { flex: 1; display: flex; justify-content: space-between; align-items: center; }
+    .mp-pname { font-size: 0.84rem; color: var(--text); font-weight: 600; }
+    .mp-pname em { font-style: normal; color: var(--muted); font-weight: 400; font-size: 0.75rem; margin-left: 4px; }
+    .mp-parea { font-size: 0.8rem; color: var(--muted); }
+    .mp-rank  { font-size: 0.75rem; color: var(--dim); width: 18px; text-align: center; }
+
+    .mp-sep { height: 1px; background: var(--border); margin: 4px 0; }
+
+    /* ════════════════════════════════ RESET BUTTON */
+    #btn-reset-bottom {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--dim);
+      border-radius: 14px;
+      padding: 10px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      width: 100%;
+      font-family: 'Space Grotesk', sans-serif;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    #btn-reset-bottom:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ════════════════════════════════ LEAFLET OVERRIDES */
+    .leaflet-tile-pane { filter: saturate(0.25) brightness(0.38) hue-rotate(200deg); }
+    .leaflet-popup-content-wrapper { background: rgba(15,22,41,0.96); color: var(--text); border-radius: 14px; backdrop-filter: blur(8px); border: 1px solid rgba(255,228,77,0.2); }
+    .leaflet-popup-tip { background: rgba(15,22,41,0.96); }
+    .leaflet-popup-content { font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem; }
+    .leaflet-control-attribution { opacity: 0.3; font-size: 0.6rem; }
+
+    /* GPS path glow */
+    .gps-glow-path { filter: drop-shadow(0 0 8px rgba(255,228,77,0.9)); }
+
+    /* 다크 툴팁 (다른 플레이어 마커) */
+    .leaflet-tooltip-dark {
+      background: rgba(15,22,41,0.96);
+      border: 1px solid rgba(255,228,77,0.35);
+      color: #fff;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+      padding: 4px 10px;
+    }
+    .leaflet-tooltip-dark::before { border-top-color: rgba(255,228,77,0.35); }
+
+    /* Smooth transitions */
+    header { transition: opacity 0.3s ease; }
+
+    /* ════ ROOM CHIP (map overlay) */
+    #room-chip {
+      position: absolute;
+      top: 72px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: none;
+      align-items: center;
+      gap: 8px;
+      background: rgba(15,22,41,0.94);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,228,77,0.45);
+      border-radius: 9999px;
+      padding: 5px 14px 5px 10px;
+      z-index: 300;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+      pointer-events: auto;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    #room-chip.visible { display: flex; }
+    #room-chip .chip-icon { color: var(--accent); font-size: 1rem; }
+    #room-chip .chip-code {
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      color: var(--accent);
+      font-size: 0.82rem;
+    }
+    #room-chip .chip-sep { color: var(--dim); }
+    #room-chip .chip-players { color: var(--muted); font-size: 0.75rem; }
+
+    /* ════ OTHER PLAYER MARKERS */
+    .other-player-dot {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: 2.5px solid rgba(255,255,255,0.9);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.65rem;
+      font-weight: 800;
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.55), 0 0 0 3px rgba(255,255,255,0.15);
+      font-family: 'Space Grotesk', sans-serif;
+      text-transform: uppercase;
+    }
+    .other-player-pulse {
+      position: absolute;
+      inset: -5px;
+      border-radius: 50%;
+      border: 2px solid currentColor;
+      opacity: 0;
+      animation: playerPulse 2s ease-out infinite;
+    }
+    @keyframes playerPulse {
+      0%   { transform: scale(0.8); opacity: 0.7; }
+      100% { transform: scale(1.6); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════ HEADER (map overlay) ════ -->
+<header>
+  <div class="logo-pill">
+    <div class="logo-avatar"><span class="material-symbols-outlined" style="font-size:1.25rem;font-variation-settings:'FILL' 1,'wght' 600">directions_run</span></div>
+    <div class="logo-info">
+      <span class="logo-level" id="header-run-count">0 Runs</span>
+      <span class="logo-text">Run<em>dom</em></span>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="area-pill">
+      <span style="font-size:0.8rem">🗺</span>
+      <span>Area</span>
+      <span class="area-val" id="header-area">0 m²</span>
+    </div>
+    <div class="badge-pill" id="badge-pill" onclick="openTab('stats'); setTimeout(()=>document.getElementById('badge-anchor').scrollIntoView({behavior:'smooth'}),200)">
+      🏅 <span id="badge-pill-count">0</span>/<span id="badge-pill-total">0</span>
+    </div>
+    <button id="btn-install-hdr">⬇ Install</button>
+  </div>
+</header>
+
+<!-- ════ MAIN ════ -->
+<div id="main">
+
+  <!-- 지도 -->
+  <div id="map"></div>
+
+  <!-- ════ ROOM CHIP (방 참가 중 지도 위 표시) ════ -->
+  <div id="room-chip" onclick="openTab('multi')">
+    <span class="material-symbols-outlined chip-icon" style="font-variation-settings:'FILL' 1">group</span>
+    <span class="chip-code" id="chip-room-code">------</span>
+    <span class="chip-sep">·</span>
+    <span class="chip-players" id="chip-player-count">1 player</span>
+  </div>
+
+  <!-- 상태 바 (지도 위) -->
+  <div id="status-bar">위치 권한이 필요합니다.</div>
+
+  <!-- 출발점 귀환 힌트 -->
+  <div id="close-hint">📍 출발점 근처! 곧 영역이 닫힙니다</div>
+
+  <!-- 실시간 HUD (상단 오버레이) -->
+  <div id="live-hud">
+    <div class="hud-zone-label">달리기 중</div>
+    <div class="hud-zone-name" id="hud-zone">영역 확보 진행 중...</div>
+    <div class="hud-grid">
+      <div class="hud-card">
+        <div class="hud-item">
+          <div class="hud-lbl">시간</div>
+          <div class="hud-val" id="hud-time">00:00</div>
+        </div>
+      </div>
+      <div class="hud-card">
+        <div class="hud-item">
+          <div class="hud-lbl">거리</div>
+          <div class="hud-val" id="hud-dist">0.00 <span style="font-size:0.7rem;font-weight:400;color:var(--muted)">km</span></div>
+        </div>
+      </div>
+      <div class="hud-card">
+        <div class="hud-item">
+          <div class="hud-lbl">페이스</div>
+          <div class="hud-val" id="hud-pace">--'--"</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 맵 플로팅 컨트롤 -->
+  <div class="map-controls" id="map-controls">
+    <button class="map-ctrl-btn" id="btn-my-location" title="내 위치">
+      <span class="material-symbols-outlined">my_location</span>
+    </button>
+    <button class="map-ctrl-btn" id="btn-zoom-in" title="확대">
+      <span class="material-symbols-outlined">add</span>
+    </button>
+    <button class="map-ctrl-btn" id="btn-zoom-out" title="축소">
+      <span class="material-symbols-outlined">remove</span>
+    </button>
+  </div>
+
+  <!-- FAB (hidden, replaced by bottom bar) -->
+  <button id="fab" class="idle" style="display:none">▶</button>
+
+  <!-- ════ STATS PANEL ════ -->
+  <div class="panel" id="panel-stats">
+    <div class="panel-header">
+      <button class="panel-back" onclick="openTab('map')"><span class="material-symbols-outlined">arrow_back</span></button>
+      <span class="panel-title">통계</span>
+    </div>
+    <div class="panel-body">
+
+      <div>
+        <div class="section-title">전체 요약</div>
+        <div class="card-grid">
+          <div class="stat-card">
+            <div class="s-label">총 달린 거리</div>
+            <div class="s-value" id="sc-dist">0<span class="s-unit">km</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="s-label">총 확보 면적</div>
+            <div class="s-value" id="sc-area">0<span class="s-unit">m²</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="s-label">달리기 횟수</div>
+            <div class="s-value" id="sc-count">0<span class="s-unit">회</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="s-label">활동한 날</div>
+            <div class="s-value" id="sc-days">0<span class="s-unit">일</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">최근 달리기 (확보 면적)</div>
+        <div class="chart-wrap" id="chart-wrap"></div>
+      </div>
+
+      <div>
+        <div class="section-title">개인 기록</div>
+        <div class="record-list">
+          <div class="record-row"><span class="rk">최장 달리기</span><span class="rv" id="rec-dist">-</span></div>
+          <div class="record-row"><span class="rk">최대 확보 면적</span><span class="rv" id="rec-area">-</span></div>
+          <div class="record-row"><span class="rk">평균 달리기 거리</span><span class="rv" id="rec-avg-dist">-</span></div>
+          <div class="record-row"><span class="rk">평균 확보 면적</span><span class="rv" id="rec-avg-area">-</span></div>
+          <div class="record-row"><span class="rk">첫 달리기</span><span class="rv" id="rec-first">-</span></div>
+        </div>
+      </div>
+
+      <div id="badge-anchor">
+        <div class="section-title">업적 배지</div>
+        <div class="badge-progress"><strong id="badge-count">0</strong> / <span id="badge-total">0</span> 달성</div>
+        <div class="badge-grid" id="badge-grid"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════ HISTORY PANEL ════ -->
+  <div class="panel" id="panel-history">
+    <div class="panel-header">
+      <button class="panel-back" onclick="openTab('map')"><span class="material-symbols-outlined">arrow_back</span></button>
+      <span class="panel-title">기록</span>
+    </div>
+    <div class="panel-body">
+
+      <div>
+        <div class="section-title">달리기 기록</div>
+        <div id="history-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+
+      <button id="btn-reset-bottom">모든 기록 초기화</button>
+
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- ════ OLD TAB BAR (hidden) ════ -->
+<nav id="tab-bar" style="display:none">
+  <button class="tab active" data-tab="map"><span class="tab-icon">🗺️</span>지도</button>
+  <button class="tab" data-tab="stats"><span class="tab-icon">📊</span>통계</button>
+  <button class="tab" data-tab="history"><span class="tab-icon">📋</span>기록</button>
+  <button class="tab" data-tab="multi"><span class="tab-icon">👥</span>같이</button>
+</nav>
+
+<!-- ════ BOTTOM BAR (Pill + Tabs) ════ -->
+<div id="bottom-bar">
+  <!-- Pill Control Bar: IDLE state -->
+  <div class="pill-bar" id="pill-idle">
+    <div class="pill-stat">
+      <span class="pill-stat-label">오늘</span>
+      <span class="pill-stat-val" id="pill-today-dist">0.0<span class="unit">km</span></span>
+    </div>
+    <button class="btn-start" id="btn-start">
+      <div class="btn-start-glow"></div>
+      <div class="btn-start-inner">
+        <span class="material-symbols-outlined">directions_run</span>
+        START
+      </div>
+    </button>
+    <div class="pill-stat">
+      <span class="pill-stat-label">영역</span>
+      <span class="pill-stat-val" id="pill-territory-count">0<span class="unit">개</span></span>
+    </div>
+  </div>
+
+  <!-- Pill Control Bar: RUNNING state -->
+  <div class="pill-bar" id="pill-running" style="display:none">
+    <button class="pill-action" id="btn-lock">
+      <span class="material-symbols-outlined">lock</span>
+      <span>LOCK</span>
+    </button>
+    <button class="btn-stop" id="btn-stop">
+      <div class="btn-stop-glow"></div>
+      <div class="btn-stop-inner">
+        <span class="material-symbols-outlined">stop_circle</span>
+        <span>STOP</span>
+      </div>
+    </button>
+    <button class="pill-action" id="btn-center-map">
+      <span class="material-symbols-outlined">my_location</span>
+      <span>위치</span>
+    </button>
+  </div>
+
+  <!-- Tab Row -->
+  <div class="tab-row" id="tab-row">
+    <button class="tab active" data-tab="map">
+      <span class="material-symbols-outlined">map</span>
+    </button>
+    <button class="tab" data-tab="stats">
+      <span class="material-symbols-outlined">emoji_events</span>
+    </button>
+    <button class="tab" data-tab="history">
+      <span class="material-symbols-outlined">history</span>
+    </button>
+    <button class="tab" data-tab="multi">
+      <span class="material-symbols-outlined">group</span>
+    </button>
+  </div>
+</div>
+
+  <!-- ════ MULTI PANEL ════ -->
+  <div class="panel" id="panel-multi">
+    <div class="panel-header">
+      <button class="panel-back" onclick="openTab('map')"><span class="material-symbols-outlined">arrow_back</span></button>
+      <span class="panel-title">멀티플레이어</span>
+    </div>
+    <div class="panel-body">
+
+      <!-- Firebase 미설정 시 -->
+      <div id="mp-unconfigured" style="display:none">
+        <div class="section-title">🔧 Firebase 설정 필요</div>
+        <div class="mp-notice">
+          멀티플레이어는 Firebase Realtime Database를 사용합니다.<br>
+          아래 단계를 따라 설정하세요.
+        </div>
+        <div class="section-title">설정 방법</div>
+        <div class="mp-notice" style="line-height:1.9">
+          1. <a href="https://console.firebase.google.com" target="_blank">Firebase Console</a> → 새 프로젝트 생성<br>
+          2. Realtime Database → 데이터베이스 만들기 (테스트 모드)<br>
+          3. 프로젝트 설정 → 앱 추가(웹) → SDK 설정 복사<br>
+          4. <code>index.html</code> 상단 <code>FIREBASE_CONFIG</code>에 붙여넣기
+        </div>
+        <div class="mp-code-block">// index.html 스크립트 상단에서 수정
+const FIREBASE_CONFIG = {
+  apiKey: "AIza...",
+  authDomain: "your-app.firebaseapp.com",
+  databaseURL: "https://your-app-rtdb.firebaseio.com",
+  projectId: "your-app",
+};</div>
+      </div>
+
+      <!-- 방 입장 전 -->
+      <div id="mp-setup" style="display:none">
+        <div class="section-title">내 닉네임</div>
+        <input class="mp-input" id="mp-name-input" type="text" placeholder="닉네임 입력 (최대 10자)" maxlength="10" />
+
+        <div class="section-title" style="margin-top:18px">새 방 만들기</div>
+        <button class="mp-btn mp-btn-primary" id="btn-create-room">🏠 방 만들기</button>
+
+        <div class="section-title" style="margin-top:18px">방 참가</div>
+        <div class="mp-join-row">
+          <input class="mp-input" id="mp-code-input" type="text" placeholder="코드 6자리" maxlength="6" />
+          <button class="mp-btn mp-btn-secondary" id="btn-join-room">참가</button>
+        </div>
+      </div>
+
+      <!-- 방 안 -->
+      <div id="mp-room" style="display:none">
+        <div class="section-title">방 코드 — 친구에게 공유하세요</div>
+        <div class="mp-room-code-box">
+          <span class="mp-room-code-val" id="mp-room-code-val">------</span>
+          <button class="mp-copy-btn" id="btn-copy-code">복사</button>
+        </div>
+        <div class="mp-hint">같은 방에 있으면 서로의 영토가 지도에 표시됩니다</div>
+
+        <div class="section-title" style="margin-top:18px">플레이어 순위</div>
+        <div class="record-list" id="mp-player-list">
+          <div style="padding:16px;text-align:center;color:var(--dim);font-size:.82rem;">플레이어를 기다리는 중...</div>
+        </div>
+
+        <div style="margin-top:16px">
+          <button class="mp-btn mp-btn-danger" id="btn-leave-room">방 나가기</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+<!-- ════ RESULT POPUP ════ -->
+<div id="result-overlay">
+  <div class="result-card">
+    <div class="result-emoji">🎉</div>
+    <div class="result-title">영역 확보!</div>
+    <div class="result-stats">
+      <div class="result-stat">
+        <div class="val" id="res-dist">-</div>
+        <div class="lbl">달린 거리</div>
+      </div>
+      <div class="result-stat">
+        <div class="val" id="res-area">-</div>
+        <div class="lbl">확보 면적</div>
+      </div>
+      <div class="result-stat">
+        <div class="val" id="res-time">-</div>
+        <div class="lbl">소요 시간</div>
+      </div>
+    </div>
+    <button id="btn-dismiss">확인</button>
+  </div>
+</div>
+
+<!-- ════ ACHIEVEMENT TOAST ════ -->
+<div id="achievement-toast">
+  <div class="toast-top">🏆 업적 달성!</div>
+  <div class="toast-row">
+    <div class="toast-big" id="toast-icon"></div>
+    <div>
+      <div class="toast-name" id="toast-name"></div>
+      <div class="toast-desc" id="toast-desc"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+
+// ═══════════════════════════════════════════════════════════════
+// ▼▼▼ Firebase 설정을 여기에 붙여넣으세요 ▼▼▼
+// ═══════════════════════════════════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey: "",
+  authDomain: "",
+  databaseURL: "",
+  projectId: "",
+};
+// ═══════════════════════════════════════════════════════════════
+// ▲▲▲ Firebase 설정 끝 ▲▲▲
+// ═══════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════
+// 상수
+// ═══════════════════════════════════════════════════════════════
+const CLOSE_THRESHOLD   = 25;
+const MIN_DIST_TO_CLOSE = 150;
+const POINT_FILTER      = 3;
+const STORAGE_KEY       = 'running-territories';
+const ACH_KEY           = 'running-achievements';
+
+const COLORS = [
+  '#FFE44D','#5BB4D8','#4ade80','#f472b6',
+  '#a78bfa','#fb923c','#34d399','#60a5fa',
+];
+
+// ═══════════════════════════════════════════════════════════════
+// 지도
+// ═══════════════════════════════════════════════════════════════
+const map = L.map('map', { center:[37.5665,126.9780], zoom:15, zoomControl:false });
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  maxZoom:19,
+}).addTo(map);
+
+// ═══════════════════════════════════════════════════════════════
+// 상태
+// ═══════════════════════════════════════════════════════════════
+let records     = [];
+let polyLayers  = {};
+let unlockedIds = new Set();
+
+let isTracking    = false;
+let watchId       = null;
+let coords        = [];
+let totalDistance = 0;
+let startTime     = null;
+let timerInterval = null;
+let lastPositions = [];   // pace 계산용 최근 위치
+
+let polyline      = null;
+let currentMarker = null;
+let startMarker   = null;
+
+// ═══════════════════════════════════════════════════════════════
+// 아이콘
+// ═══════════════════════════════════════════════════════════════
+const currentIcon = L.divIcon({
+  className:'',
+  html:`<div style="width:18px;height:18px;background:#FFE44D;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 4px rgba(255,228,77,0.45);"></div>`,
+  iconSize:[18,18], iconAnchor:[9,9],
+});
+
+function makeStartIcon(pulsing) {
+  const c = pulsing ? '#f59e0b' : '#22c55e';
+  const s = pulsing ? 'box-shadow:0 0 0 5px rgba(245,158,11,0.4);animation:si 0.8s ease-in-out infinite alternate;' : '';
+  return L.divIcon({
+    className:'',
+    html:`<style>@keyframes si{from{box-shadow:0 0 0 3px rgba(245,158,11,0.4)}to{box-shadow:0 0 0 7px rgba(245,158,11,0.1)}}</style><div style="width:16px;height:16px;background:${c};border:3px solid #fff;border-radius:50%;${s}"></div>`,
+    iconSize:[16,16], iconAnchor:[8,8],
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 수학
+// ═══════════════════════════════════════════════════════════════
+function haversine(a, b) {
+  const R=6371000, φ1=a.lat*Math.PI/180, φ2=b.lat*Math.PI/180;
+  const Δφ=(b.lat-a.lat)*Math.PI/180, Δλ=(b.lng-a.lng)*Math.PI/180;
+  const s=Math.sin(Δφ/2)**2+Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
+  return R*2*Math.atan2(Math.sqrt(s),Math.sqrt(1-s));
+}
+
+function calcArea(pts) {
+  if (pts.length<3) return 0;
+  const R=6371000, lat0=pts[0].lat*Math.PI/180, cosLat=Math.cos(lat0);
+  let area=0;
+  for (let i=0; i<pts.length; i++) {
+    const j=(i+1)%pts.length;
+    const x1=pts[i].lng*Math.PI/180*R*cosLat, y1=pts[i].lat*Math.PI/180*R;
+    const x2=pts[j].lng*Math.PI/180*R*cosLat, y2=pts[j].lat*Math.PI/180*R;
+    area+=x1*y2-x2*y1;
+  }
+  return Math.abs(area/2);
+}
+
+function fmtArea(m2) {
+  return m2>=10000 ? (m2/10000).toFixed(2)+' ha' : Math.round(m2).toLocaleString()+' m²';
+}
+
+function fmtDate(iso) {
+  const d=new Date(iso);
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} `+
+         `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function fmtTime(sec) {
+  const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60;
+  if (h>0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function fmtPace(mPerS) {
+  if (!mPerS || mPerS <= 0) return "--'--\"";
+  const secPerKm = 1000 / mPerS;
+  const m = Math.floor(secPerKm / 60);
+  const s = Math.round(secPerKm % 60);
+  return `${m}'${String(s).padStart(2,'0')}"`;
+}
+
+function nextColor() { return COLORS[records.length % COLORS.length]; }
+
+// ═══════════════════════════════════════════════════════════════
+// 저장 / 불러오기
+// ═══════════════════════════════════════════════════════════════
+function saveRecords() { localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); }
+function loadRecords() {
+  try { records = JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); }
+  catch { records=[]; }
+}
+
+function loadAchievements() {
+  try { unlockedIds = new Set(JSON.parse(localStorage.getItem(ACH_KEY)||'[]')); }
+  catch { unlockedIds=new Set(); }
+}
+function saveAchievements() { localStorage.setItem(ACH_KEY, JSON.stringify([...unlockedIds])); }
+
+// ═══════════════════════════════════════════════════════════════
+// 지도 그리기
+// ═══════════════════════════════════════════════════════════════
+function drawRecord(rec) {
+  const poly = L.polygon(rec.coords.map(c=>[c.lat,c.lng]),
+    { color:rec.color, weight:3, fillColor:rec.color, fillOpacity:0.38 }
+  ).addTo(map);
+  poly.bindPopup(
+    `<b style="color:${rec.color}">${fmtDate(rec.date)}</b><br>`+
+    `📏 ${(rec.distance/1000).toFixed(2)} km<br>`+
+    `🗺 ${fmtArea(rec.area)}`
+  );
+  polyLayers[rec.id] = poly;
+}
+
+function drawAllRecords() { records.forEach(drawRecord); }
+
+// ═══════════════════════════════════════════════════════════════
+// 업적
+// ═══════════════════════════════════════════════════════════════
+const ACHIEVEMENTS = [
+  { id:'first_run',       icon:'🏁', name:'첫 달리기',      desc:'첫 번째 영역을 확보했습니다',          check:r=>r.length>=1 },
+  { id:'dist_1km',        icon:'👟', name:'1km 달리기',     desc:'한 번에 1km 이상 달렸습니다',           check:r=>r.some(x=>x.distance>=1000) },
+  { id:'dist_3km',        icon:'🏃', name:'3km 달리기',     desc:'한 번에 3km 이상 달렸습니다',           check:r=>r.some(x=>x.distance>=3000) },
+  { id:'dist_5km',        icon:'🔥', name:'5km 달리기',     desc:'한 번에 5km 이상 달렸습니다',           check:r=>r.some(x=>x.distance>=5000) },
+  { id:'total_10km',      icon:'⚡', name:'누적 10km',      desc:'총 10km 이상 달렸습니다',               check:r=>r.reduce((s,x)=>s+x.distance,0)>=10000 },
+  { id:'total_50km',      icon:'🌟', name:'누적 50km',      desc:'총 50km 이상 달렸습니다',               check:r=>r.reduce((s,x)=>s+x.distance,0)>=50000 },
+  { id:'area_500',        icon:'📍', name:'소영주',         desc:'단일 영역 500m² 달성',                  check:r=>r.some(x=>x.area>=500) },
+  { id:'area_1k',         icon:'🗺️', name:'영토 개척',      desc:'단일 영역 1,000m² 달성',                check:r=>r.some(x=>x.area>=1000) },
+  { id:'area_10k',        icon:'🏰', name:'영토 정복',      desc:'단일 영역 10,000m² 달성',               check:r=>r.some(x=>x.area>=10000) },
+  { id:'total_area_1ha',  icon:'🌍', name:'1헥타르',        desc:'총 면적 1ha 달성',                      check:r=>r.reduce((s,x)=>s+x.area,0)>=10000 },
+  { id:'total_area_10ha', icon:'🌎', name:'10헥타르',       desc:'총 면적 10ha 달성',                     check:r=>r.reduce((s,x)=>s+x.area,0)>=100000 },
+  { id:'count_3',         icon:'🎯', name:'3회 달성',       desc:'3번 영역을 확보했습니다',                check:r=>r.length>=3 },
+  { id:'count_10',        icon:'💪', name:'10회 달성',      desc:'10번 영역을 확보했습니다',               check:r=>r.length>=10 },
+  { id:'count_30',        icon:'👑', name:'30회 달성',      desc:'30번 영역을 확보했습니다',               check:r=>r.length>=30 },
+  { id:'streak_3',        icon:'📅', name:'3일 연속',       desc:'3일 연속으로 달렸습니다',                check:r=>checkStreak(r,3) },
+  { id:'streak_7',        icon:'🗓️', name:'7일 연속',       desc:'7일 연속으로 달렸습니다',                check:r=>checkStreak(r,7) },
+];
+
+function checkStreak(recs, days) {
+  if (!recs.length) return false;
+  const ud=[...new Set(recs.map(r=>r.date.slice(0,10)))].sort();
+  let max=1, cur=1;
+  for (let i=1;i<ud.length;i++) {
+    const diff=(new Date(ud[i])-new Date(ud[i-1]))/86400000;
+    cur = diff===1 ? cur+1 : 1;
+    if (cur>max) max=cur;
+  }
+  return max>=days;
+}
+
+let toastQueue=[], toastTimer=null;
+function showToast(ach) { toastQueue.push(ach); if(!toastTimer) nextToast(); }
+function nextToast() {
+  if (!toastQueue.length) { toastTimer=null; return; }
+  const ach=toastQueue.shift();
+  document.getElementById('toast-icon').textContent=ach.icon;
+  document.getElementById('toast-name').textContent=ach.name;
+  document.getElementById('toast-desc').textContent=ach.desc;
+  document.getElementById('achievement-toast').style.display='block';
+  toastTimer=setTimeout(()=>{ document.getElementById('achievement-toast').style.display='none'; setTimeout(nextToast,300); },3000);
+}
+
+function checkAchievements() {
+  const fresh=[];
+  for (const a of ACHIEVEMENTS) if (!unlockedIds.has(a.id)&&a.check(records)) { unlockedIds.add(a.id); fresh.push(a); }
+  if (fresh.length) { saveAchievements(); fresh.forEach(showToast); }
+  updateBadgePill();
+}
+
+function updateBadgePill() {
+  const c=ACHIEVEMENTS.filter(a=>unlockedIds.has(a.id)).length;
+  document.getElementById('badge-pill-count').textContent=c;
+  document.getElementById('badge-pill-total').textContent=ACHIEVEMENTS.length;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 통계 렌더
+// ═══════════════════════════════════════════════════════════════
+function renderStats() {
+  const empty = records.length===0;
+
+  document.getElementById('sc-dist').innerHTML  = empty ? '0<span class="s-unit">km</span>'  : `${(records.reduce((s,r)=>s+r.distance,0)/1000).toFixed(2)}<span class="s-unit">km</span>`;
+  document.getElementById('sc-area').innerHTML  = empty ? '0<span class="s-unit">m²</span>'  : `${Math.round(records.reduce((s,r)=>s+r.area,0)).toLocaleString()}<span class="s-unit">m²</span>`;
+  document.getElementById('sc-count').innerHTML = `${records.length}<span class="s-unit">회</span>`;
+  document.getElementById('sc-days').innerHTML  = empty ? '0<span class="s-unit">일</span>'  : `${new Set(records.map(r=>r.date.slice(0,10))).size}<span class="s-unit">일</span>`;
+
+  if (empty) {
+    ['rec-dist','rec-area','rec-avg-dist','rec-avg-area','rec-first'].forEach(id=>document.getElementById(id).textContent='-');
+    document.getElementById('chart-wrap').innerHTML='<div class="chart-empty">아직 달리기 기록이 없습니다.</div>';
+  } else {
+    const totalDist=records.reduce((s,r)=>s+r.distance,0);
+    const totalArea=records.reduce((s,r)=>s+r.area,0);
+    document.getElementById('rec-dist').textContent=(Math.max(...records.map(r=>r.distance))/1000).toFixed(2)+' km';
+    document.getElementById('rec-area').textContent=fmtArea(Math.max(...records.map(r=>r.area)));
+    document.getElementById('rec-avg-dist').textContent=(totalDist/records.length/1000).toFixed(2)+' km';
+    document.getElementById('rec-avg-area').textContent=fmtArea(totalArea/records.length);
+    document.getElementById('rec-first').textContent=fmtDate(records[0].date).split(' ')[0];
+    drawBarChart();
+  }
+
+  // 배지
+  const grid=document.getElementById('badge-grid');
+  const cnt=ACHIEVEMENTS.filter(a=>unlockedIds.has(a.id)).length;
+  document.getElementById('badge-count').textContent=cnt;
+  document.getElementById('badge-total').textContent=ACHIEVEMENTS.length;
+  grid.innerHTML=ACHIEVEMENTS.map(a=>`
+    <div class="badge-item ${unlockedIds.has(a.id)?'unlocked':'locked'}" title="${a.desc}">
+      <div class="badge-icon">${a.icon}</div>
+      <div class="badge-name">${a.name}</div>
+    </div>`).join('');
+}
+
+function drawBarChart() {
+  const wrap=document.getElementById('chart-wrap');
+  const recent=records.slice(-10);
+  const W=wrap.clientWidth||320, H=140;
+  const canvas=document.createElement('canvas');
+  canvas.id='chart-canvas';
+  canvas.width=W*devicePixelRatio; canvas.height=H*devicePixelRatio;
+  canvas.style.cssText=`width:${W}px;height:${H}px;display:block;`;
+  wrap.innerHTML=''; wrap.appendChild(canvas);
+  const ctx=canvas.getContext('2d');
+  ctx.scale(devicePixelRatio,devicePixelRatio);
+  const pad={top:16,right:12,bottom:30,left:12};
+  const cW=W-pad.left-pad.right, cH=H-pad.top-pad.bottom;
+  const maxV=Math.max(...recent.map(r=>r.area),1);
+  const bw=cW/recent.length, gap=bw*0.25;
+  recent.forEach((r,i)=>{
+    const bh=(r.area/maxV)*cH, x=pad.left+i*bw+gap/2, y=pad.top+cH-bh, bww=bw-gap;
+    ctx.fillStyle=r.color; ctx.globalAlpha=0.85;
+    const rr=Math.min(4,bww/2);
+    ctx.beginPath();
+    ctx.moveTo(x+rr,y); ctx.lineTo(x+bww-rr,y);
+    ctx.quadraticCurveTo(x+bww,y,x+bww,y+rr);
+    ctx.lineTo(x+bww,y+bh); ctx.lineTo(x,y+bh); ctx.lineTo(x,y+rr);
+    ctx.quadraticCurveTo(x,y,x+rr,y); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha=1;
+    const lbl=r.area>=1000?(r.area/1000).toFixed(1)+'k':Math.round(r.area).toString();
+    ctx.fillStyle='#7a9cc0'; ctx.font=`${Math.max(8,Math.min(10,bww*.55))}px 'Space Grotesk', sans-serif`; ctx.textAlign='center';
+    ctx.fillText(lbl,x+bww/2,y-3);
+    const d=new Date(r.date);
+    ctx.fillStyle='#3d5270'; ctx.font="9px 'Space Grotesk', sans-serif";
+    ctx.fillText(`${d.getMonth()+1}/${d.getDate()}`,x+bww/2,H-pad.bottom+12);
+  });
+  ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(pad.left,pad.top+cH); ctx.lineTo(W-pad.right,pad.top+cH); ctx.stroke();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 기록 패널
+// ═══════════════════════════════════════════════════════════════
+function renderHistory() {
+  const list=document.getElementById('history-list');
+  if (!records.length) {
+    list.innerHTML='<div style="text-align:center;color:var(--dim);font-size:.84rem;padding:40px 0;">아직 기록이 없습니다.</div>';
+    return;
+  }
+  list.innerHTML=[...records].reverse().map(r=>`
+    <div class="history-item" onclick="focusRecord('${r.id}')">
+      <div class="hi-dot" style="background:${r.color}"></div>
+      <div class="hi-info">
+        <div class="hi-date">${fmtDate(r.date)}</div>
+        <div class="hi-stats">
+          <span>📏 <strong>${(r.distance/1000).toFixed(2)}km</strong></span>
+          <span>🗺 <strong>${fmtArea(r.area)}</strong></span>
+        </div>
+      </div>
+      <span style="color:var(--dim);font-size:.8rem;">›</span>
+    </div>`).join('');
+}
+
+function focusRecord(id) {
+  const layer=polyLayers[id];
+  if (!layer) return;
+  openTab('map');
+  map.fitBounds(layer.getBounds(),{padding:[40,40]});
+  layer.openPopup();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 탭 전환
+// ═══════════════════════════════════════════════════════════════
+function openTab(name) {
+  // 새 탭 + 기존 탭 모두 업데이트
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+  document.getElementById('panel-stats').classList.toggle('open', name==='stats');
+  document.getElementById('panel-history').classList.toggle('open', name==='history');
+  document.getElementById('panel-multi').classList.toggle('open', name==='multi');
+  // 패널 열릴 때 pill bar + 맵 컨트롤 숨김, 맵일 때 표시
+  const pillIdle = document.getElementById('pill-idle');
+  const pillRunning = document.getElementById('pill-running');
+  const mapControls = document.getElementById('map-controls');
+  const hdr = document.querySelector('header');
+  if (name==='map') {
+    if (isTracking) { pillIdle.style.display='none'; pillRunning.style.display='flex'; }
+    else { pillIdle.style.display='flex'; pillRunning.style.display='none'; }
+    mapControls.style.display='flex';
+    hdr.style.display='';
+  } else {
+    pillIdle.style.display='none';
+    pillRunning.style.display='none';
+    mapControls.style.display='none';
+    hdr.style.display='none';
+  }
+  if (name==='stats')   renderStats();
+  if (name==='history') renderHistory();
+  if (name==='multi')   renderMultiPanel();
+  if (name==='map') setTimeout(()=>map.invalidateSize(),50);
+}
+
+// 새 탭바 이벤트
+document.querySelectorAll('#tab-row .tab').forEach(t=>t.addEventListener('click',()=>openTab(t.dataset.tab)));
+// 기존 탭바 이벤트 (호환)
+document.querySelectorAll('#tab-bar .tab').forEach(t=>t.addEventListener('click',()=>openTab(t.dataset.tab)));
+
+// ═══════════════════════════════════════════════════════════════
+// 멀티플레이어
+// ═══════════════════════════════════════════════════════════════
+const MP_COLORS = ['#FFE44D','#5BB4D8','#4ade80','#f472b6','#a78bfa','#fb923c','#34d399','#60a5fa'];
+
+const FIREBASE_READY = !!(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.databaseURL);
+let db = null;
+
+// 플레이어 식별자 (로컬 영속)
+let myPlayerId = localStorage.getItem('rundom-pid');
+if (!myPlayerId) {
+  myPlayerId = Math.random().toString(36).slice(2,10)+Date.now().toString(36);
+  localStorage.setItem('rundom-pid', myPlayerId);
+}
+let myPlayerName  = localStorage.getItem('rundom-pname') || '';
+let myPlayerColor = null;
+let myRoomId      = localStorage.getItem('rundom-room') || null;
+
+let otherLayers        = {};  // playerId → [L.polygon]
+let otherPlayerMarkers = {};  // playerId → L.marker (실시간 위치)
+let mpListeners        = [];  // firebase off() 용
+
+function initFirebase() {
+  if (!FIREBASE_READY || db) return;
+  firebase.initializeApp(FIREBASE_CONFIG);
+  db = firebase.database();
+}
+
+function generateCode() {
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:6},()=>chars[Math.floor(Math.random()*chars.length)]).join('');
+}
+
+function renderMultiPanel() {
+  if (!FIREBASE_READY) {
+    document.getElementById('mp-unconfigured').style.display='block';
+    document.getElementById('mp-setup').style.display='none';
+    document.getElementById('mp-room').style.display='none';
+    return;
+  }
+  document.getElementById('mp-unconfigured').style.display='none';
+  if (myRoomId) {
+    showRoomView(myRoomId);
+  } else {
+    document.getElementById('mp-setup').style.display='block';
+    document.getElementById('mp-room').style.display='none';
+    document.getElementById('mp-name-input').value = myPlayerName;
+  }
+}
+
+async function createRoom() {
+  const name = document.getElementById('mp-name-input').value.trim();
+  if (!name) { alert('닉네임을 입력해주세요.'); return; }
+  initFirebase();
+  const roomId = generateCode();
+  const color  = MP_COLORS[0];
+  await db.ref(`rooms/${roomId}/players/${myPlayerId}`).set({ name, color, joinedAt: Date.now() });
+  myPlayerName  = name; myPlayerColor = color; myRoomId = roomId;
+  localStorage.setItem('rundom-pname', name);
+  localStorage.setItem('rundom-room',  roomId);
+  showRoomView(roomId);
+  subscribeRoom(roomId);
+}
+
+async function joinRoom() {
+  const name = document.getElementById('mp-name-input').value.trim();
+  const code = document.getElementById('mp-code-input').value.trim().toUpperCase();
+  if (!name) { alert('닉네임을 입력해주세요.'); return; }
+  if (code.length !== 6) { alert('방 코드는 6자리입니다.'); return; }
+  initFirebase();
+  const snap = await db.ref(`rooms/${code}/players`).get();
+  if (!snap.exists()) { alert('존재하지 않는 방입니다.'); return; }
+  const players = snap.val();
+  const idx = Object.keys(players).length % MP_COLORS.length;
+  const color = MP_COLORS[idx];
+  await db.ref(`rooms/${code}/players/${myPlayerId}`).set({ name, color, joinedAt: Date.now() });
+  myPlayerName  = name; myPlayerColor = color; myRoomId = code;
+  localStorage.setItem('rundom-pname', name);
+  localStorage.setItem('rundom-room',  code);
+  showRoomView(code);
+  subscribeRoom(code);
+}
+
+function showRoomView(roomId) {
+  document.getElementById('mp-setup').style.display='none';
+  document.getElementById('mp-room').style.display='block';
+  document.getElementById('mp-room-code-val').textContent = roomId;
+  updateRoomChip(roomId);
+}
+
+function subscribeRoom(roomId) {
+  // 기존 리스너 해제
+  mpListeners.forEach(fn=>fn()); mpListeners=[];
+
+  // 기존 다른 플레이어 마커 제거
+  Object.values(otherPlayerMarkers).forEach(m=>map.removeLayer(m));
+  otherPlayerMarkers = {};
+
+  // 다른 플레이어 영토 실시간 동기화
+  const terRef = db.ref(`rooms/${roomId}/territories`);
+  const terCb  = terRef.on('value', snap => {
+    Object.values(otherLayers).forEach(ls=>ls.forEach(l=>map.removeLayer(l)));
+    otherLayers = {};
+    if (!snap.exists()) return;
+    Object.values(snap.val()).forEach(t => {
+      if (t.playerId === myPlayerId) return;
+      if (!otherLayers[t.playerId]) otherLayers[t.playerId]=[];
+      const poly = L.polygon(t.coords.map(c=>[c.lat,c.lng]),
+        { color:t.playerColor, weight:2, fillColor:t.playerColor, fillOpacity:0.38 }
+      ).addTo(map);
+      poly.bindPopup(
+        `<b style="color:${t.playerColor}">${t.playerName}</b><br>`+
+        `${(t.distance/1000).toFixed(2)} km · ${fmtArea(t.area)}`
+      );
+      otherLayers[t.playerId].push(poly);
+    });
+  });
+  mpListeners.push(()=>terRef.off('value', terCb));
+
+  // 실시간 플레이어 위치 마커
+  const posRef = db.ref(`rooms/${roomId}/positions`);
+  const posCb  = posRef.on('value', snap => {
+    const data = snap.exists() ? snap.val() : {};
+    // 새 위치 업데이트 또는 마커 생성
+    Object.entries(data).forEach(([pid, pos]) => {
+      if (pid === myPlayerId) return;
+      const initials = (pos.name||'?')[0].toUpperCase();
+      const color    = pos.color || '#888';
+      if (otherPlayerMarkers[pid]) {
+        otherPlayerMarkers[pid].setLatLng([pos.lat, pos.lng]);
+      } else {
+        const iconHtml = `
+          <div style="position:relative;width:32px;height:32px;">
+            <div class="other-player-dot" style="background:${color};color:currentColor;">
+              <div class="other-player-pulse" style="color:${color};border-color:${color}"></div>
+              ${initials}
+            </div>
+          </div>`;
+        const icon = L.divIcon({ html:iconHtml, className:'', iconSize:[32,32], iconAnchor:[16,16] });
+        otherPlayerMarkers[pid] = L.marker([pos.lat, pos.lng], {icon, zIndexOffset:500})
+          .addTo(map)
+          .bindTooltip(pos.name||'?', {permanent:false, direction:'top', className:'leaflet-tooltip-dark'});
+      }
+    });
+    // 나간 플레이어 마커 제거
+    Object.keys(otherPlayerMarkers).forEach(pid => {
+      if (!data[pid]) { map.removeLayer(otherPlayerMarkers[pid]); delete otherPlayerMarkers[pid]; }
+    });
+    // 룸 칩 플레이어 수 업데이트
+    const total = Object.keys(data).length;
+    document.getElementById('chip-player-count').textContent = `${total}명`;
+  });
+  mpListeners.push(()=>posRef.off('value', posCb));
+
+  // 플레이어 목록 실시간
+  const plRef = db.ref(`rooms/${roomId}/players`);
+  const plCb  = plRef.on('value', async () => {
+    await refreshPlayerList(roomId);
+  });
+  mpListeners.push(()=>plRef.off('value', plCb));
+}
+
+function updateRoomChip(roomId) {
+  const chip = document.getElementById('room-chip');
+  if (roomId) {
+    document.getElementById('chip-room-code').textContent = roomId;
+    chip.classList.add('visible');
+  } else {
+    chip.classList.remove('visible');
+  }
+}
+
+async function refreshPlayerList(roomId) {
+  const [plSnap, terSnap] = await Promise.all([
+    db.ref(`rooms/${roomId}/players`).get(),
+    db.ref(`rooms/${roomId}/territories`).get(),
+  ]);
+  if (!plSnap.exists()) return;
+
+  const players = plSnap.val();
+  const ters    = terSnap.exists() ? Object.values(terSnap.val()) : [];
+  const areaMap = {};
+  ters.forEach(t => { areaMap[t.playerId] = (areaMap[t.playerId]||0) + t.area; });
+
+  const sorted = Object.entries(players).sort(([a],[b])=>(areaMap[b]||0)-(areaMap[a]||0));
+  const medals = ['🥇','🥈','🥉'];
+
+  document.getElementById('mp-player-list').innerHTML = sorted.map(([id,p],i)=>`
+    <div class="mp-player-row">
+      <span class="mp-rank">${medals[i]||i+1}</span>
+      <div class="mp-dot" style="background:${p.color}"></div>
+      <div class="mp-player-info">
+        <span class="mp-pname">${p.name}${id===myPlayerId?'<em>(나)</em>':''}</span>
+        <span class="mp-parea">${fmtArea(areaMap[id]||0)}</span>
+      </div>
+    </div>`).join('');
+}
+
+function pushTerritoryToRoom(rec) {
+  if (!myRoomId || !db) return;
+  db.ref(`rooms/${myRoomId}/territories/${rec.id}`).set({
+    playerId:    myPlayerId,
+    playerName:  myPlayerName,
+    playerColor: myPlayerColor || rec.color,
+    coords:      rec.coords,
+    area:        rec.area,
+    distance:    rec.distance,
+    date:        rec.date,
+  });
+}
+
+function leaveRoom() {
+  if (!myRoomId || !db) return;
+  db.ref(`rooms/${myRoomId}/players/${myPlayerId}`).remove();
+  db.ref(`rooms/${myRoomId}/positions/${myPlayerId}`).remove();
+  mpListeners.forEach(fn=>fn()); mpListeners=[];
+  Object.values(otherLayers).forEach(ls=>ls.forEach(l=>map.removeLayer(l)));
+  otherLayers={};
+  Object.values(otherPlayerMarkers).forEach(m=>map.removeLayer(m));
+  otherPlayerMarkers={};
+  myRoomId=null; myPlayerColor=null;
+  localStorage.removeItem('rundom-room');
+  updateRoomChip(null);
+  document.getElementById('mp-room').style.display='none';
+  document.getElementById('mp-setup').style.display='block';
+}
+
+// 버튼 이벤트
+document.getElementById('btn-create-room').addEventListener('click', createRoom);
+document.getElementById('btn-join-room').addEventListener('click', joinRoom);
+document.getElementById('btn-leave-room').addEventListener('click', ()=>{ if(confirm('방을 나가시겠습니까?')) leaveRoom(); });
+document.getElementById('btn-copy-code').addEventListener('click', ()=>{
+  navigator.clipboard.writeText(myRoomId||'').then(()=>{
+    const btn=document.getElementById('btn-copy-code');
+    btn.textContent='✓ 복사됨'; setTimeout(()=>btn.textContent='복사',1500);
+  });
+});
+document.getElementById('mp-code-input').addEventListener('input', e=>{
+  e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 타이머
+// ═══════════════════════════════════════════════════════════════
+function startTimer() {
+  startTime=Date.now();
+  timerInterval=setInterval(()=>{
+    const elapsed=Math.floor((Date.now()-startTime)/1000);
+    document.getElementById('hud-time').textContent=fmtTime(elapsed);
+  },1000);
+}
+function stopTimer() { clearInterval(timerInterval); timerInterval=null; }
+function elapsedSec() { return startTime ? Math.floor((Date.now()-startTime)/1000) : 0; }
+
+// ═══════════════════════════════════════════════════════════════
+// 영역 닫기
+// ═══════════════════════════════════════════════════════════════
+function closeTerritory() {
+  if (coords.length<3) return;
+  const elapsed=elapsedSec();
+  const rec={
+    id:Date.now().toString(), date:new Date().toISOString(),
+    coords:[...coords], distance:totalDistance, area:calcArea(coords),
+    color:nextColor(), duration:elapsed,
+  };
+  records.push(rec); saveRecords();
+  if (polyline) { map.removeLayer(polyline); polyline=null; }
+  drawRecord(rec);
+  updateHeaderStats();
+  checkAchievements();
+  pushTerritoryToRoom(rec); // 멀티: Firebase에 동기화
+
+  // 결과 팝업
+  document.getElementById('res-dist').textContent=(rec.distance/1000).toFixed(2)+' km';
+  document.getElementById('res-area').textContent=fmtArea(rec.area);
+  document.getElementById('res-time').textContent=fmtTime(elapsed);
+  document.getElementById('result-overlay').classList.add('open');
+
+  coords=[]; totalDistance=0; lastPositions=[];
+  document.getElementById('close-hint').style.display='none';
+  if (startMarker) startMarker.setIcon(makeStartIcon(false));
+  setStatus('<span class="dot-pulse"></span>다음 구역을 달리세요!');
+  document.getElementById('hud-dist').innerHTML='0.00 <span style="font-size:0.7rem;font-weight:400;color:var(--muted)">km</span>';
+}
+
+function updateHeaderStats() {
+  updateBadgePill();
+  updateBottomBar();
+  // 헤더 영역 표시
+  const totalArea = records.reduce((s,r)=>s+r.area, 0);
+  document.getElementById('header-area').textContent = fmtArea(totalArea);
+  document.getElementById('header-run-count').textContent = `${records.length} Runs`;
+}
+
+function updateBottomBar() {
+  // 오늘 거리
+  const today = new Date().toISOString().slice(0,10);
+  const todayDist = records.filter(r=>r.date.slice(0,10)===today).reduce((s,r)=>s+r.distance,0);
+  document.getElementById('pill-today-dist').innerHTML = `${(todayDist/1000).toFixed(1)}<span class="unit">km</span>`;
+  document.getElementById('pill-territory-count').innerHTML = `${records.length}<span class="unit">개</span>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GPS
+// ═══════════════════════════════════════════════════════════════
+function onPosition(pos) {
+  const {latitude:lat,longitude:lng,accuracy}=pos.coords;
+  const pt={lat,lng,t:Date.now()};
+
+  if (coords.length===0&&!startMarker) {
+    map.setView([lat,lng],17);
+    startMarker=L.marker([lat,lng],{icon:makeStartIcon(false)}).addTo(map).bindPopup('출발점');
+  }
+
+  if (coords.length>0) {
+    const d=haversine(coords[coords.length-1],pt);
+    if (d<POINT_FILTER) return;
+    totalDistance+=d;
+    lastPositions.push({d, t:pt.t});
+    if (lastPositions.length>8) lastPositions.shift();
+  }
+
+  coords.push(pt);
+
+  // 경로
+  const lls=coords.map(c=>[c.lat,c.lng]);
+  if (polyline) polyline.setLatLngs(lls);
+  else polyline=L.polyline(lls,{color:'#FFE44D',weight:5,opacity:.95,lineJoin:'round',lineCap:'round',className:'gps-glow-path'}).addTo(map);
+
+  if (currentMarker) currentMarker.setLatLng([lat,lng]);
+  else currentMarker=L.marker([lat,lng],{icon:currentIcon}).addTo(map);
+
+  map.panTo([lat,lng]);
+
+  // 멀티: 내 위치 실시간 브로드캐스트 (방 참가 중일 때만)
+  if (myRoomId && db) {
+    db.ref(`rooms/${myRoomId}/positions/${myPlayerId}`).set({
+      lat, lng,
+      name:  myPlayerName  || '나',
+      color: myPlayerColor || '#FFE44D',
+      ts:    Date.now(),
+    });
+  }
+
+  // HUD 업데이트
+  document.getElementById('hud-dist').innerHTML=`${(totalDistance/1000).toFixed(2)} <span style="font-size:0.7rem;font-weight:400;color:var(--muted)">km</span>`;
+
+  // 페이스 계산 (최근 N포인트 평균 속도)
+  if (lastPositions.length>=2) {
+    const totalD=lastPositions.reduce((s,p)=>s+p.d,0);
+    const totalT=(lastPositions[lastPositions.length-1].t-lastPositions[0].t)/1000;
+    const speed=totalT>0?totalD/totalT:0;
+    document.getElementById('hud-pace').textContent=fmtPace(speed);
+  }
+
+  // 루프 감지
+  const distToStart=startMarker
+    ? haversine(pt,{lat:startMarker.getLatLng().lat,lng:startMarker.getLatLng().lng})
+    : Infinity;
+  const canClose=totalDistance>=MIN_DIST_TO_CLOSE&&coords.length>=10;
+
+  if (canClose&&distToStart<=CLOSE_THRESHOLD) { closeTerritory(); return; }
+
+  const hint=document.getElementById('close-hint');
+  if (canClose&&distToStart<=CLOSE_THRESHOLD*4) {
+    hint.style.display='block';
+    if (startMarker) startMarker.setIcon(makeStartIcon(true));
+  } else {
+    hint.style.display='none';
+    if (startMarker) startMarker.setIcon(makeStartIcon(false));
+  }
+
+  setStatus(`<span class="dot-pulse"></span>추적 중 · 정확도 ${Math.round(accuracy)}m`);
+}
+
+function onError(err) {
+  const m={1:'위치 권한 거부됨.',2:'위치를 가져올 수 없습니다.',3:'시간 초과'};
+  setStatus(m[err.code]||'오류 발생');
+  isTracking=false;
+  document.getElementById('pill-idle').style.display='flex';
+  document.getElementById('pill-running').style.display='none';
+  document.getElementById('live-hud').classList.remove('visible');
+  document.querySelector('header').style.opacity='1';
+  document.querySelector('header').style.pointerEvents='';
+}
+
+function setStatus(html) { document.getElementById('status-bar').innerHTML=html; }
+
+// ═══════════════════════════════════════════════════════════════
+// FAB (시작/중지) — 새 Pill Bar 연결
+// ═══════════════════════════════════════════════════════════════
+const fab=document.getElementById('fab');
+
+function startRun() {
+  if (!('geolocation' in navigator)) { setStatus('위치 서비스 미지원'); return; }
+  isTracking=true;
+  // UI 전환: idle → running
+  document.getElementById('pill-idle').style.display='none';
+  document.getElementById('pill-running').style.display='flex';
+  document.getElementById('live-hud').classList.add('visible');
+  // 헤더 숨기기 (HUD가 대체)
+  document.querySelector('header').style.opacity='0';
+  document.querySelector('header').style.pointerEvents='none';
+  startTimer();
+  setStatus('<span class="dot-pulse"></span>위치 확인 중...');
+  watchId=navigator.geolocation.watchPosition(onPosition,onError,{
+    enableHighAccuracy:true, maximumAge:2000, timeout:10000,
+  });
+}
+
+function stopRun() {
+  if (watchId!==null) { navigator.geolocation.clearWatch(watchId); watchId=null; }
+  stopTimer();
+  isTracking=false;
+  // UI 전환: running → idle
+  document.getElementById('pill-idle').style.display='flex';
+  document.getElementById('pill-running').style.display='none';
+  document.getElementById('live-hud').classList.remove('visible');
+  // 헤더 복원
+  document.querySelector('header').style.opacity='1';
+  document.querySelector('header').style.pointerEvents='';
+  document.getElementById('close-hint').style.display='none';
+  setStatus(`완료 · 총 ${records.length}구역 확보`);
+  updateBottomBar();
+}
+
+// 새 버튼 이벤트
+document.getElementById('btn-start').addEventListener('click', startRun);
+document.getElementById('btn-stop').addEventListener('click', stopRun);
+
+// 맵 컨트롤 버튼
+document.getElementById('btn-my-location').addEventListener('click', ()=>{
+  if (currentMarker) map.panTo(currentMarker.getLatLng());
+});
+document.getElementById('btn-zoom-in').addEventListener('click', ()=> map.zoomIn());
+document.getElementById('btn-zoom-out').addEventListener('click', ()=> map.zoomOut());
+document.getElementById('btn-center-map').addEventListener('click', ()=>{
+  if (currentMarker) map.panTo(currentMarker.getLatLng());
+});
+
+// 기존 FAB 호환 (hidden)
+fab.addEventListener('click',()=>{
+  if (!isTracking) startRun();
+  else stopRun();
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 결과 팝업 닫기
+// ═══════════════════════════════════════════════════════════════
+document.getElementById('btn-dismiss').addEventListener('click',()=>{
+  document.getElementById('result-overlay').classList.remove('open');
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 초기화 버튼
+// ═══════════════════════════════════════════════════════════════
+document.getElementById('btn-reset-bottom').addEventListener('click',()=>{
+  if (!confirm('모든 기록을 삭제할까요?')) return;
+  Object.values(polyLayers).forEach(l=>map.removeLayer(l));
+  polyLayers={}; records=[]; saveRecords();
+  updateBadgePill();
+  renderHistory();
+  setStatus('기록이 초기화되었습니다.');
+});
+
+// ═══════════════════════════════════════════════════════════════
+// PWA
+// ═══════════════════════════════════════════════════════════════
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
+
+const btnInstHdr=document.getElementById('btn-install-hdr');
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); deferredPrompt=e; btnInstHdr.style.display='block'; });
+btnInstHdr.addEventListener('click',async()=>{
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const {outcome}=await deferredPrompt.userChoice;
+  if (outcome==='accepted') btnInstHdr.style.display='none';
+  deferredPrompt=null;
+});
+window.addEventListener('appinstalled',()=>{ btnInstHdr.style.display='none'; });
+
+// ═══════════════════════════════════════════════════════════════
+// 초기 로드
+// ═══════════════════════════════════════════════════════════════
+loadRecords();
+loadAchievements();
+drawAllRecords();
+updateBadgePill();
+updateHeaderStats();
+updateBottomBar();
+
+// 이전 세션의 방에 자동 재접속
+if (myRoomId && FIREBASE_READY) {
+  initFirebase();
+  subscribeRoom(myRoomId);
+  updateRoomChip(myRoomId);
+}
+
+if (records.length>0) {
+  setStatus(`저장된 구역 ${records.length}개를 불러왔습니다.`);
+  const all=records.flatMap(r=>r.coords.map(c=>[c.lat,c.lng]));
+  if (all.length) map.fitBounds(L.latLngBounds(all),{padding:[40,40]});
+} else {
+  setStatus('▶ 버튼을 눌러 달리기를 시작하세요.');
+}
+
+</script>
+</body>
+</html>
