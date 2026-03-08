@@ -4,8 +4,8 @@
   "description": "Run your Kingdom — 달리면서 나만의 영토를 만들어 보세요",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1a1a2e",
-  "theme_color": "#e94560",
+  "background_color": "#080c1a",
+  "theme_color": "#FFE44D",
   "orientation": "portrait-primary",
   "categories": ["sports", "health", "games"],
   "icons": [

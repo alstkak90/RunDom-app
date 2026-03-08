@@ -1,28 +1,94 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- 배경 -->
-  <rect width="512" height="512" rx="100" fill="#16213e"/>
+  <defs>
+    <radialGradient id="bg" cx="40%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#1a2845"/>
+      <stop offset="100%" stop-color="#080c1a"/>
+    </radialGradient>
+    <filter id="hexGlow" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="11" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="crownGlow" x="-22%" y="-22%" width="144%" height="144%">
+      <feGaussianBlur stdDeviation="9" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="dotGlow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
 
-  <!-- 영토 육각형 -->
-  <polygon points="256,60 430,160 430,352 256,452 82,352 82,160"
-           fill="#e94560" opacity="0.18"/>
-  <polygon points="256,60 430,160 430,352 256,452 82,352 82,160"
-           fill="none" stroke="#e94560" stroke-width="16" stroke-linejoin="round"/>
+  <!-- Background -->
+  <rect width="512" height="512" rx="108" fill="url(#bg)"/>
+  <!-- Subtle gold border -->
+  <rect width="512" height="512" rx="108" fill="none"
+        stroke="rgba(255,228,77,0.18)" stroke-width="4"/>
 
-  <!-- 달리는 사람 -->
-  <!-- 머리 -->
-  <circle cx="270" cy="155" r="34" fill="#e94560"/>
-  <!-- 몸통 -->
-  <line x1="270" y1="189" x2="255" y2="295" stroke="#e94560" stroke-width="22" stroke-linecap="round"/>
-  <!-- 왼팔 -->
-  <line x1="262" y1="230" x2="195" y2="272" stroke="#e94560" stroke-width="18" stroke-linecap="round"/>
-  <!-- 오른팔 -->
-  <line x1="262" y1="230" x2="318" y2="208" stroke="#e94560" stroke-width="18" stroke-linecap="round"/>
-  <!-- 왼다리 -->
-  <line x1="255" y1="295" x2="200" y2="370" stroke="#e94560" stroke-width="18" stroke-linecap="round"/>
-  <!-- 오른다리 -->
-  <line x1="255" y1="295" x2="310" y2="355" stroke="#e94560" stroke-width="18" stroke-linecap="round"/>
-  <!-- 왼발 -->
-  <line x1="200" y1="370" x2="155" y2="360" stroke="#e94560" stroke-width="16" stroke-linecap="round"/>
-  <!-- 오른발 -->
-  <line x1="310" y1="355" x2="355" y2="380" stroke="#e94560" stroke-width="16" stroke-linecap="round"/>
+  <!-- GPS territory hexagon -->
+  <polygon
+    points="256,58 424,156 424,356 256,454 88,356 88,156"
+    fill="rgba(255,228,77,0.09)"
+    stroke="#FFE44D"
+    stroke-width="17"
+    stroke-linejoin="round"
+    filter="url(#hexGlow)"
+  />
+
+  <!-- GPS waypoint dots at each vertex -->
+  <!-- Top (start/end point) — brightest -->
+  <circle cx="256" cy="58"  r="15" fill="#FFE44D" filter="url(#dotGlow)"/>
+  <!-- Remaining vertices -->
+  <circle cx="424" cy="156" r="10" fill="#FFE44D" opacity="0.72"/>
+  <circle cx="424" cy="356" r="10" fill="#FFE44D" opacity="0.72"/>
+  <circle cx="256" cy="454" r="10" fill="#FFE44D" opacity="0.72"/>
+  <circle cx="88"  cy="356" r="10" fill="#FFE44D" opacity="0.72"/>
+  <circle cx="88"  cy="156" r="10" fill="#FFE44D" opacity="0.72"/>
+
+  <!-- ══ Crown (Kingdom / Dom) ══ -->
+  <!-- Body: three prongs rising from base band -->
+  <path
+    d="M 148 358
+       L 148 304
+       L 188 304
+       L 200 218
+       L 226 266
+       L 256 164
+       L 286 266
+       L 312 218
+       L 324 304
+       L 364 304
+       L 364 358
+       Z"
+    fill="#FFE44D"
+    filter="url(#crownGlow)"
+  />
+  <!-- Base band overlay — rounded bottom corners -->
+  <rect x="148" y="304" width="216" height="54" rx="11" fill="#FFE44D"/>
+
+  <!-- Cyan jewels on prong tips -->
+  <!-- Center gem (top, tallest prong) -->
+  <circle cx="256" cy="178" r="21" fill="#5BB4D8"/>
+  <circle cx="253" cy="175" r="9"  fill="rgba(255,255,255,0.40)"/>
+  <!-- Left gem -->
+  <circle cx="200" cy="230" r="15" fill="#5BB4D8"/>
+  <circle cx="198" cy="227" r="6"  fill="rgba(255,255,255,0.34)"/>
+  <!-- Right gem -->
+  <circle cx="312" cy="230" r="15" fill="#5BB4D8"/>
+  <circle cx="310" cy="227" r="6"  fill="rgba(255,255,255,0.34)"/>
+
+  <!-- Crown base band decorations (dark rivets) -->
+  <circle cx="184" cy="331" r="9" fill="#0d1528"/>
+  <circle cx="220" cy="331" r="9" fill="#0d1528"/>
+  <circle cx="256" cy="331" r="9" fill="#0d1528"/>
+  <circle cx="292" cy="331" r="9" fill="#0d1528"/>
+  <circle cx="328" cy="331" r="9" fill="#0d1528"/>
 </svg>
