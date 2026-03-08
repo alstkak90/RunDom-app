@@ -677,6 +677,27 @@
 
     .mp-sep { height: 1px; background: var(--border); margin: 4px 0; }
 
+    /* ════════════════════════════════ SETTINGS / LANGUAGE */
+    .lang-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .lang-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px 12px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    .lang-btn:hover { border-color: rgba(255,228,77,0.4); background: var(--surface2); }
+    .lang-btn.active { border-color: var(--accent); background: var(--surface2); box-shadow: 0 0 15px rgba(255,228,77,0.15); }
+    .lang-flag { font-size: 2.2rem; line-height: 1; }
+    .lang-name { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+
     /* ════════════════════════════════ RESET BUTTON */
     #btn-reset-bottom {
       background: none;
@@ -812,7 +833,7 @@
   <div id="map"></div>
 
   <!-- ════ ROOM CHIP (방 참가 중 지도 위 표시) ════ -->
-  <div id="room-chip" onclick="openTab('multi')">
+  <div id="room-chip">
     <span class="material-symbols-outlined chip-icon" style="font-variation-settings:'FILL' 1">group</span>
     <span class="chip-code" id="chip-room-code">------</span>
     <span class="chip-sep">·</span>
@@ -820,31 +841,31 @@
   </div>
 
   <!-- 상태 바 (지도 위) -->
-  <div id="status-bar">위치 권한이 필요합니다.</div>
+  <div id="status-bar" data-i18n="statusInit">Location permission required.</div>
 
-  <!-- 출발점 귀환 힌트 -->
-  <div id="close-hint">📍 출발점 근처! 곧 영역이 닫힙니다</div>
+  <!-- Close-to-start hint -->
+  <div id="close-hint" data-i18n="closeHint">📍 Near start! Zone closing soon</div>
 
-  <!-- 실시간 HUD (상단 오버레이) -->
+  <!-- Live HUD (top overlay while running) -->
   <div id="live-hud">
-    <div class="hud-zone-label">달리기 중</div>
-    <div class="hud-zone-name" id="hud-zone">영역 확보 진행 중...</div>
+    <div class="hud-zone-label" data-i18n="hudRunning">Running</div>
+    <div class="hud-zone-name" id="hud-zone" data-i18n="hudZoneName">Capturing zone...</div>
     <div class="hud-grid">
       <div class="hud-card">
         <div class="hud-item">
-          <div class="hud-lbl">시간</div>
+          <div class="hud-lbl" data-i18n="hudTime">Time</div>
           <div class="hud-val" id="hud-time">00:00</div>
         </div>
       </div>
       <div class="hud-card">
         <div class="hud-item">
-          <div class="hud-lbl">거리</div>
+          <div class="hud-lbl" data-i18n="hudDist">Dist</div>
           <div class="hud-val" id="hud-dist">0.00 <span style="font-size:0.7rem;font-weight:400;color:var(--muted)">km</span></div>
         </div>
       </div>
       <div class="hud-card">
         <div class="hud-item">
-          <div class="hud-lbl">페이스</div>
+          <div class="hud-lbl" data-i18n="hudPace">Pace</div>
           <div class="hud-val" id="hud-pace">--'--"</div>
         </div>
       </div>
@@ -871,51 +892,51 @@
   <div class="panel" id="panel-stats">
     <div class="panel-header">
       <button class="panel-back" onclick="openTab('map')"><span class="material-symbols-outlined">arrow_back</span></button>
-      <span class="panel-title">통계</span>
+      <span class="panel-title" data-i18n="statsTitle">Stats</span>
     </div>
     <div class="panel-body">
 
       <div>
-        <div class="section-title">전체 요약</div>
+        <div class="section-title" data-i18n="statsSummary">Overview</div>
         <div class="card-grid">
           <div class="stat-card">
-            <div class="s-label">총 달린 거리</div>
+            <div class="s-label" data-i18n="statsTotalDist">Total Distance</div>
             <div class="s-value" id="sc-dist">0<span class="s-unit">km</span></div>
           </div>
           <div class="stat-card">
-            <div class="s-label">총 확보 면적</div>
+            <div class="s-label" data-i18n="statsTotalArea">Total Area</div>
             <div class="s-value" id="sc-area">0<span class="s-unit">m²</span></div>
           </div>
           <div class="stat-card">
-            <div class="s-label">달리기 횟수</div>
-            <div class="s-value" id="sc-count">0<span class="s-unit">회</span></div>
+            <div class="s-label" data-i18n="statsRunCount">Runs</div>
+            <div class="s-value" id="sc-count">0</div>
           </div>
           <div class="stat-card">
-            <div class="s-label">활동한 날</div>
-            <div class="s-value" id="sc-days">0<span class="s-unit">일</span></div>
+            <div class="s-label" data-i18n="statsActiveDays">Active Days</div>
+            <div class="s-value" id="sc-days">0</div>
           </div>
         </div>
       </div>
 
       <div>
-        <div class="section-title">최근 달리기 (확보 면적)</div>
+        <div class="section-title" data-i18n="statsRecent">Recent Runs (Area)</div>
         <div class="chart-wrap" id="chart-wrap"></div>
       </div>
 
       <div>
-        <div class="section-title">개인 기록</div>
+        <div class="section-title" data-i18n="statsRecords">Personal Records</div>
         <div class="record-list">
-          <div class="record-row"><span class="rk">최장 달리기</span><span class="rv" id="rec-dist">-</span></div>
-          <div class="record-row"><span class="rk">최대 확보 면적</span><span class="rv" id="rec-area">-</span></div>
-          <div class="record-row"><span class="rk">평균 달리기 거리</span><span class="rv" id="rec-avg-dist">-</span></div>
-          <div class="record-row"><span class="rk">평균 확보 면적</span><span class="rv" id="rec-avg-area">-</span></div>
-          <div class="record-row"><span class="rk">첫 달리기</span><span class="rv" id="rec-first">-</span></div>
+          <div class="record-row"><span class="rk" data-i18n="recMaxDist">Longest Run</span><span class="rv" id="rec-dist">-</span></div>
+          <div class="record-row"><span class="rk" data-i18n="recMaxArea">Largest Zone</span><span class="rv" id="rec-area">-</span></div>
+          <div class="record-row"><span class="rk" data-i18n="recAvgDist">Avg Distance</span><span class="rv" id="rec-avg-dist">-</span></div>
+          <div class="record-row"><span class="rk" data-i18n="recAvgArea">Avg Zone</span><span class="rv" id="rec-avg-area">-</span></div>
+          <div class="record-row"><span class="rk" data-i18n="recFirst">First Run</span><span class="rv" id="rec-first">-</span></div>
         </div>
       </div>
 
       <div id="badge-anchor">
-        <div class="section-title">업적 배지</div>
-        <div class="badge-progress"><strong id="badge-count">0</strong> / <span id="badge-total">0</span> 달성</div>
+        <div class="section-title" data-i18n="badgeSection">Achievements</div>
+        <div class="badge-progress"><strong id="badge-count">0</strong> / <span id="badge-total">0</span> <span id="badge-progress-label" data-i18n="badgeProgress">Unlocked</span></div>
         <div class="badge-grid" id="badge-grid"></div>
       </div>
 
@@ -926,16 +947,16 @@
   <div class="panel" id="panel-history">
     <div class="panel-header">
       <button class="panel-back" onclick="openTab('map')"><span class="material-symbols-outlined">arrow_back</span></button>
-      <span class="panel-title">기록</span>
+      <span class="panel-title" data-i18n="histTitle">History</span>
     </div>
     <div class="panel-body">
 
       <div>
-        <div class="section-title">달리기 기록</div>
+        <div class="section-title" data-i18n="histSection">Run History</div>
         <div id="history-list" style="display:flex;flex-direction:column;gap:8px;"></div>
       </div>
 
-      <button id="btn-reset-bottom">모든 기록 초기화</button>
+      <button id="btn-reset-bottom" data-i18n="btnReset">Clear All Records</button>
 
     </div>
   </div>
@@ -955,7 +976,7 @@
   <!-- Pill Control Bar: IDLE state -->
   <div class="pill-bar" id="pill-idle">
     <div class="pill-stat">
-      <span class="pill-stat-label">오늘</span>
+      <span class="pill-stat-label" data-i18n="pillToday">Today</span>
       <span class="pill-stat-val" id="pill-today-dist">0.0<span class="unit">km</span></span>
     </div>
     <button class="btn-start" id="btn-start">
@@ -966,8 +987,8 @@
       </div>
     </button>
     <div class="pill-stat">
-      <span class="pill-stat-label">영역</span>
-      <span class="pill-stat-val" id="pill-territory-count">0<span class="unit">개</span></span>
+      <span class="pill-stat-label" data-i18n="pillZone">Zones</span>
+      <span class="pill-stat-val" id="pill-territory-count">0</span>
     </div>
   </div>
 
@@ -986,7 +1007,7 @@
     </button>
     <button class="pill-action" id="btn-center-map">
       <span class="material-symbols-outlined">my_location</span>
-      <span>위치</span>
+      <span data-i18n="pillLocation">Center</span>
     </button>
   </div>
 
@@ -1001,74 +1022,39 @@
     <button class="tab" data-tab="history">
       <span class="material-symbols-outlined">history</span>
     </button>
-    <button class="tab" data-tab="multi">
-      <span class="material-symbols-outlined">group</span>
+    <button class="tab" data-tab="settings">
+      <span class="material-symbols-outlined">settings</span>
     </button>
   </div>
 </div>
 
-  <!-- ════ MULTI PANEL ════ -->
-  <div class="panel" id="panel-multi">
+  <!-- ════ SETTINGS PANEL ════ -->
+  <div class="panel" id="panel-settings">
     <div class="panel-header">
       <button class="panel-back" onclick="openTab('map')"><span class="material-symbols-outlined">arrow_back</span></button>
-      <span class="panel-title">멀티플레이어</span>
+      <span class="panel-title" data-i18n="settingsTitle">Settings</span>
     </div>
     <div class="panel-body">
 
-      <!-- Firebase 미설정 시 -->
-      <div id="mp-unconfigured" style="display:none">
-        <div class="section-title">🔧 Firebase 설정 필요</div>
-        <div class="mp-notice">
-          멀티플레이어는 Firebase Realtime Database를 사용합니다.<br>
-          아래 단계를 따라 설정하세요.
-        </div>
-        <div class="section-title">설정 방법</div>
-        <div class="mp-notice" style="line-height:1.9">
-          1. <a href="https://console.firebase.google.com" target="_blank">Firebase Console</a> → 새 프로젝트 생성<br>
-          2. Realtime Database → 데이터베이스 만들기 (테스트 모드)<br>
-          3. 프로젝트 설정 → 앱 추가(웹) → SDK 설정 복사<br>
-          4. <code>index.html</code> 상단 <code>FIREBASE_CONFIG</code>에 붙여넣기
-        </div>
-        <div class="mp-code-block">// index.html 스크립트 상단에서 수정
-const FIREBASE_CONFIG = {
-  apiKey: "AIza...",
-  authDomain: "your-app.firebaseapp.com",
-  databaseURL: "https://your-app-rtdb.firebaseio.com",
-  projectId: "your-app",
-};</div>
-      </div>
-
-      <!-- 방 입장 전 -->
-      <div id="mp-setup" style="display:none">
-        <div class="section-title">내 닉네임</div>
-        <input class="mp-input" id="mp-name-input" type="text" placeholder="닉네임 입력 (최대 10자)" maxlength="10" />
-
-        <div class="section-title" style="margin-top:18px">새 방 만들기</div>
-        <button class="mp-btn mp-btn-primary" id="btn-create-room">🏠 방 만들기</button>
-
-        <div class="section-title" style="margin-top:18px">방 참가</div>
-        <div class="mp-join-row">
-          <input class="mp-input" id="mp-code-input" type="text" placeholder="코드 6자리" maxlength="6" />
-          <button class="mp-btn mp-btn-secondary" id="btn-join-room">참가</button>
-        </div>
-      </div>
-
-      <!-- 방 안 -->
-      <div id="mp-room" style="display:none">
-        <div class="section-title">방 코드 — 친구에게 공유하세요</div>
-        <div class="mp-room-code-box">
-          <span class="mp-room-code-val" id="mp-room-code-val">------</span>
-          <button class="mp-copy-btn" id="btn-copy-code">복사</button>
-        </div>
-        <div class="mp-hint">같은 방에 있으면 서로의 영토가 지도에 표시됩니다</div>
-
-        <div class="section-title" style="margin-top:18px">플레이어 순위</div>
-        <div class="record-list" id="mp-player-list">
-          <div style="padding:16px;text-align:center;color:var(--dim);font-size:.82rem;">플레이어를 기다리는 중...</div>
-        </div>
-
-        <div style="margin-top:16px">
-          <button class="mp-btn mp-btn-danger" id="btn-leave-room">방 나가기</button>
+      <div>
+        <div class="section-title" data-i18n="settingsLang">Language</div>
+        <div class="lang-grid">
+          <button class="lang-btn" data-lang="en" onclick="applyLang('en')">
+            <span class="lang-flag">🇺🇸</span>
+            <span class="lang-name">English</span>
+          </button>
+          <button class="lang-btn" data-lang="ko" onclick="applyLang('ko')">
+            <span class="lang-flag">🇰🇷</span>
+            <span class="lang-name">한국어</span>
+          </button>
+          <button class="lang-btn" data-lang="zh" onclick="applyLang('zh')">
+            <span class="lang-flag">🇨🇳</span>
+            <span class="lang-name">中文</span>
+          </button>
+          <button class="lang-btn" data-lang="es" onclick="applyLang('es')">
+            <span class="lang-flag">🇪🇸</span>
+            <span class="lang-name">Español</span>
+          </button>
         </div>
       </div>
 
@@ -1079,28 +1065,28 @@ const FIREBASE_CONFIG = {
 <div id="result-overlay">
   <div class="result-card">
     <div class="result-emoji">🎉</div>
-    <div class="result-title">영역 확보!</div>
+    <div class="result-title" data-i18n="resultTitle">Zone Secured!</div>
     <div class="result-stats">
       <div class="result-stat">
         <div class="val" id="res-dist">-</div>
-        <div class="lbl">달린 거리</div>
+        <div class="lbl" data-i18n="resultDist">Distance</div>
       </div>
       <div class="result-stat">
         <div class="val" id="res-area">-</div>
-        <div class="lbl">확보 면적</div>
+        <div class="lbl" data-i18n="resultArea">Area</div>
       </div>
       <div class="result-stat">
         <div class="val" id="res-time">-</div>
-        <div class="lbl">소요 시간</div>
+        <div class="lbl" data-i18n="resultTime">Time</div>
       </div>
     </div>
-    <button id="btn-dismiss">확인</button>
+    <button id="btn-dismiss" data-i18n="resultOk">OK</button>
   </div>
 </div>
 
 <!-- ════ ACHIEVEMENT TOAST ════ -->
 <div id="achievement-toast">
-  <div class="toast-top">🏆 업적 달성!</div>
+  <div class="toast-top" data-i18n="toastTitle">🏆 Achievement Unlocked!</div>
   <div class="toast-row">
     <div class="toast-big" id="toast-icon"></div>
     <div>
@@ -1269,6 +1255,284 @@ function drawRecord(rec) {
 function drawAllRecords() { records.forEach(drawRecord); }
 
 // ═══════════════════════════════════════════════════════════════
+// i18n — Translations
+// ═══════════════════════════════════════════════════════════════
+const TRANSLATIONS = {
+  en: {
+    statusInit:'Location permission required.',
+    statusLocating:'Getting location...',
+    statusTracking:'Tracking · Accuracy {acc}m',
+    statusNext:'Run your next zone!',
+    statusDone:'Done · {n} zones secured',
+    statusLoaded:'{n} zones loaded.',
+    statusStart:'Press ▶ to start running.',
+    statusReset:'All records cleared.',
+    statusNoGeo:'Geolocation not supported',
+    errPermDenied:'Location permission denied.',
+    errUnavailable:'Unable to retrieve location.',
+    errTimeout:'Location request timed out.',
+    hudRunning:'Running',
+    hudZoneName:'Capturing zone...',
+    hudTime:'Time', hudDist:'Dist', hudPace:'Pace',
+    closeHint:'📍 Near start! Zone closing soon',
+    pillToday:'Today', pillZone:'Zones', pillLocation:'Center',
+    statsTitle:'Stats', statsSummary:'Overview',
+    statsRecent:'Recent Runs (Area)', statsRecords:'Personal Records',
+    statsTotalDist:'Total Distance', statsTotalArea:'Total Area',
+    statsRunCount:'Runs', statsActiveDays:'Active Days',
+    recMaxDist:'Longest Run', recMaxArea:'Largest Zone',
+    recAvgDist:'Avg Distance', recAvgArea:'Avg Zone', recFirst:'First Run',
+    badgeSection:'Achievements', badgeProgress:'Unlocked',
+    unitRuns:'', unitDays:'', unitZones:'',
+    noRuns:'No runs recorded yet.',
+    histTitle:'History', histSection:'Run History', histEmpty:'No records yet.',
+    btnReset:'Clear All Records', confirmReset:'Delete all records?',
+    resultTitle:'Zone Secured!', resultDist:'Distance', resultArea:'Area',
+    resultTime:'Time', resultOk:'OK',
+    toastTitle:'🏆 Achievement Unlocked!',
+    settingsTitle:'Settings', settingsLang:'Language',
+    startPopup:'Start Point',
+    playerCount:'{n} players',
+    alertNoName:'Please enter a nickname.',
+    alertCodeLen:'Room code must be 6 characters.',
+    alertRoomNotFound:'Room not found.',
+    confirmLeave:'Leave the room?',
+    copy:'Copy', copied:'✓ Copied', me:'me',
+    ach:{
+      first_run:      {name:'First Run',            desc:'Secured your first zone'},
+      dist_1km:       {name:'1 km Run',             desc:'Ran 1 km or more in a single run'},
+      dist_3km:       {name:'3 km Run',             desc:'Ran 3 km or more in a single run'},
+      dist_5km:       {name:'5 km Run',             desc:'Ran 5 km or more in a single run'},
+      total_10km:     {name:'10 km Total',          desc:'Ran 10 km or more in total'},
+      total_50km:     {name:'50 km Total',          desc:'Ran 50 km or more in total'},
+      area_500:       {name:'Minor Lord',           desc:'Secured a single zone of 500 m²'},
+      area_1k:        {name:'Territory Pioneer',    desc:'Secured a single zone of 1,000 m²'},
+      area_10k:       {name:'Territory Conqueror',  desc:'Secured a single zone of 10,000 m²'},
+      total_area_1ha: {name:'1 Hectare',            desc:'Total area reached 1 ha'},
+      total_area_10ha:{name:'10 Hectares',          desc:'Total area reached 10 ha'},
+      count_3:        {name:'3 Zones',              desc:'Secured 3 zones in total'},
+      count_10:       {name:'10 Zones',             desc:'Secured 10 zones in total'},
+      count_30:       {name:'30 Zones',             desc:'Secured 30 zones in total'},
+      streak_3:       {name:'3-Day Streak',         desc:'Ran 3 days in a row'},
+      streak_7:       {name:'7-Day Streak',         desc:'Ran 7 days in a row'},
+    },
+  },
+  ko: {
+    statusInit:'위치 권한이 필요합니다.',
+    statusLocating:'위치 확인 중...',
+    statusTracking:'추적 중 · 정확도 {acc}m',
+    statusNext:'다음 구역을 달리세요!',
+    statusDone:'완료 · 총 {n}구역 확보',
+    statusLoaded:'저장된 구역 {n}개를 불러왔습니다.',
+    statusStart:'▶ 버튼을 눌러 달리기를 시작하세요.',
+    statusReset:'기록이 초기화되었습니다.',
+    statusNoGeo:'위치 서비스 미지원',
+    errPermDenied:'위치 권한 거부됨.',
+    errUnavailable:'위치를 가져올 수 없습니다.',
+    errTimeout:'시간 초과',
+    hudRunning:'달리기 중',
+    hudZoneName:'영역 확보 진행 중...',
+    hudTime:'시간', hudDist:'거리', hudPace:'페이스',
+    closeHint:'📍 출발점 근처! 곧 영역이 닫힙니다',
+    pillToday:'오늘', pillZone:'영역', pillLocation:'위치',
+    statsTitle:'통계', statsSummary:'전체 요약',
+    statsRecent:'최근 달리기 (확보 면적)', statsRecords:'개인 기록',
+    statsTotalDist:'총 달린 거리', statsTotalArea:'총 확보 면적',
+    statsRunCount:'달리기 횟수', statsActiveDays:'활동한 날',
+    recMaxDist:'최장 달리기', recMaxArea:'최대 확보 면적',
+    recAvgDist:'평균 달리기 거리', recAvgArea:'평균 확보 면적', recFirst:'첫 달리기',
+    badgeSection:'업적 배지', badgeProgress:'달성',
+    unitRuns:'회', unitDays:'일', unitZones:'개',
+    noRuns:'아직 달리기 기록이 없습니다.',
+    histTitle:'기록', histSection:'달리기 기록', histEmpty:'아직 기록이 없습니다.',
+    btnReset:'모든 기록 초기화', confirmReset:'모든 기록을 삭제할까요?',
+    resultTitle:'영역 확보!', resultDist:'달린 거리', resultArea:'확보 면적',
+    resultTime:'소요 시간', resultOk:'확인',
+    toastTitle:'🏆 업적 달성!',
+    settingsTitle:'설정', settingsLang:'언어',
+    startPopup:'출발점',
+    playerCount:'{n}명',
+    alertNoName:'닉네임을 입력해주세요.',
+    alertCodeLen:'방 코드는 6자리입니다.',
+    alertRoomNotFound:'존재하지 않는 방입니다.',
+    confirmLeave:'방을 나가시겠습니까?',
+    copy:'복사', copied:'✓ 복사됨', me:'나',
+    ach:{
+      first_run:      {name:'첫 달리기',   desc:'첫 번째 영역을 확보했습니다'},
+      dist_1km:       {name:'1km 달리기',  desc:'한 번에 1km 이상 달렸습니다'},
+      dist_3km:       {name:'3km 달리기',  desc:'한 번에 3km 이상 달렸습니다'},
+      dist_5km:       {name:'5km 달리기',  desc:'한 번에 5km 이상 달렸습니다'},
+      total_10km:     {name:'누적 10km',   desc:'총 10km 이상 달렸습니다'},
+      total_50km:     {name:'누적 50km',   desc:'총 50km 이상 달렸습니다'},
+      area_500:       {name:'소영주',       desc:'단일 영역 500m² 달성'},
+      area_1k:        {name:'영토 개척',    desc:'단일 영역 1,000m² 달성'},
+      area_10k:       {name:'영토 정복',    desc:'단일 영역 10,000m² 달성'},
+      total_area_1ha: {name:'1헥타르',     desc:'총 면적 1ha 달성'},
+      total_area_10ha:{name:'10헥타르',    desc:'총 면적 10ha 달성'},
+      count_3:        {name:'3회 달성',     desc:'3번 영역을 확보했습니다'},
+      count_10:       {name:'10회 달성',    desc:'10번 영역을 확보했습니다'},
+      count_30:       {name:'30회 달성',    desc:'30번 영역을 확보했습니다'},
+      streak_3:       {name:'3일 연속',     desc:'3일 연속으로 달렸습니다'},
+      streak_7:       {name:'7일 연속',     desc:'7일 연속으로 달렸습니다'},
+    },
+  },
+  zh: {
+    statusInit:'需要位置权限。',
+    statusLocating:'正在获取位置...',
+    statusTracking:'追踪中 · 精度 {acc}m',
+    statusNext:'快去跑下一个区域吧！',
+    statusDone:'完成 · 共占领 {n} 个区域',
+    statusLoaded:'已加载 {n} 个区域。',
+    statusStart:'按 ▶ 开始跑步。',
+    statusReset:'记录已清空。',
+    statusNoGeo:'不支持定位功能',
+    errPermDenied:'位置权限被拒绝。',
+    errUnavailable:'无法获取位置信息。',
+    errTimeout:'定位超时。',
+    hudRunning:'跑步中',
+    hudZoneName:'区域占领进行中...',
+    hudTime:'时间', hudDist:'距离', hudPace:'配速',
+    closeHint:'📍 接近起点！即将完成区域',
+    pillToday:'今日', pillZone:'区域', pillLocation:'定位',
+    statsTitle:'统计', statsSummary:'总览',
+    statsRecent:'最近跑步（面积）', statsRecords:'个人记录',
+    statsTotalDist:'总距离', statsTotalArea:'总面积',
+    statsRunCount:'跑步次数', statsActiveDays:'活跃天数',
+    recMaxDist:'最长单次跑步', recMaxArea:'最大单次面积',
+    recAvgDist:'平均跑步距离', recAvgArea:'平均跑步面积', recFirst:'首次跑步',
+    badgeSection:'成就徽章', badgeProgress:'已解锁',
+    unitRuns:'次', unitDays:'天', unitZones:'个',
+    noRuns:'暂无跑步记录。',
+    histTitle:'记录', histSection:'跑步记录', histEmpty:'暂无记录。',
+    btnReset:'清空所有记录', confirmReset:'确定删除所有记录？',
+    resultTitle:'区域占领成功！', resultDist:'跑步距离', resultArea:'占领面积',
+    resultTime:'用时', resultOk:'确认',
+    toastTitle:'🏆 成就解锁！',
+    settingsTitle:'设置', settingsLang:'语言',
+    startPopup:'起点',
+    playerCount:'{n}人',
+    alertNoName:'请输入昵称。',
+    alertCodeLen:'房间码须为6位。',
+    alertRoomNotFound:'房间不存在。',
+    confirmLeave:'确定要离开房间？',
+    copy:'复制', copied:'✓ 已复制', me:'我',
+    ach:{
+      first_run:      {name:'初次跑步',   desc:'成功占领了第一个区域'},
+      dist_1km:       {name:'1公里跑',    desc:'单次跑步超过1公里'},
+      dist_3km:       {name:'3公里跑',    desc:'单次跑步超过3公里'},
+      dist_5km:       {name:'5公里跑',    desc:'单次跑步超过5公里'},
+      total_10km:     {name:'累计10公里', desc:'累计跑步超过10公里'},
+      total_50km:     {name:'累计50公里', desc:'累计跑步超过50公里'},
+      area_500:       {name:'小领主',     desc:'单次占领面积达500m²'},
+      area_1k:        {name:'领地开拓',   desc:'单次占领面积达1,000m²'},
+      area_10k:       {name:'领土征服',   desc:'单次占领面积达10,000m²'},
+      total_area_1ha: {name:'1公顷',      desc:'总面积达到1公顷'},
+      total_area_10ha:{name:'10公顷',     desc:'总面积达到10公顷'},
+      count_3:        {name:'3次达成',    desc:'成功占领3个区域'},
+      count_10:       {name:'10次达成',   desc:'成功占领10个区域'},
+      count_30:       {name:'30次达成',   desc:'成功占领30个区域'},
+      streak_3:       {name:'连续3天',    desc:'连续3天进行了跑步'},
+      streak_7:       {name:'连续7天',    desc:'连续7天进行了跑步'},
+    },
+  },
+  es: {
+    statusInit:'Se requiere permiso de ubicación.',
+    statusLocating:'Obteniendo ubicación...',
+    statusTracking:'Rastreando · Precisión {acc}m',
+    statusNext:'¡Corre tu próxima zona!',
+    statusDone:'Listo · {n} zonas aseguradas',
+    statusLoaded:'{n} zonas cargadas.',
+    statusStart:'Presiona ▶ para empezar a correr.',
+    statusReset:'Registros eliminados.',
+    statusNoGeo:'Geolocalización no disponible',
+    errPermDenied:'Permiso de ubicación denegado.',
+    errUnavailable:'No se puede obtener la ubicación.',
+    errTimeout:'Tiempo de espera agotado.',
+    hudRunning:'Corriendo',
+    hudZoneName:'Capturando zona...',
+    hudTime:'Tiempo', hudDist:'Dist', hudPace:'Ritmo',
+    closeHint:'📍 ¡Cerca del inicio! La zona se cerrará pronto',
+    pillToday:'Hoy', pillZone:'Zonas', pillLocation:'Centro',
+    statsTitle:'Estadísticas', statsSummary:'Resumen',
+    statsRecent:'Últimas carreras (Área)', statsRecords:'Récords personales',
+    statsTotalDist:'Distancia total', statsTotalArea:'Área total',
+    statsRunCount:'Carreras', statsActiveDays:'Días activos',
+    recMaxDist:'Carrera más larga', recMaxArea:'Área máxima',
+    recAvgDist:'Distancia promedio', recAvgArea:'Área promedio', recFirst:'Primera carrera',
+    badgeSection:'Logros', badgeProgress:'Desbloqueados',
+    unitRuns:'', unitDays:'', unitZones:'',
+    noRuns:'Aún no hay registros de carrera.',
+    histTitle:'Historial', histSection:'Historial de carreras', histEmpty:'Sin registros aún.',
+    btnReset:'Borrar todos los registros', confirmReset:'¿Eliminar todos los registros?',
+    resultTitle:'¡Zona asegurada!', resultDist:'Distancia', resultArea:'Área',
+    resultTime:'Tiempo', resultOk:'OK',
+    toastTitle:'🏆 ¡Logro desbloqueado!',
+    settingsTitle:'Ajustes', settingsLang:'Idioma',
+    startPopup:'Punto de inicio',
+    playerCount:'{n} jugadores',
+    alertNoName:'Por favor ingresa un apodo.',
+    alertCodeLen:'El código de sala debe tener 6 caracteres.',
+    alertRoomNotFound:'Sala no encontrada.',
+    confirmLeave:'¿Salir de la sala?',
+    copy:'Copiar', copied:'✓ Copiado', me:'yo',
+    ach:{
+      first_run:      {name:'Primera carrera',      desc:'Aseguraste tu primera zona'},
+      dist_1km:       {name:'Carrera de 1 km',      desc:'Corriste más de 1 km en una sesión'},
+      dist_3km:       {name:'Carrera de 3 km',      desc:'Corriste más de 3 km en una sesión'},
+      dist_5km:       {name:'Carrera de 5 km',      desc:'Corriste más de 5 km en una sesión'},
+      total_10km:     {name:'10 km acumulados',     desc:'Corriste más de 10 km en total'},
+      total_50km:     {name:'50 km acumulados',     desc:'Corriste más de 50 km en total'},
+      area_500:       {name:'Pequeño señor',        desc:'Zona de 500 m² asegurada'},
+      area_1k:        {name:'Pionero territorial',  desc:'Zona de 1.000 m² asegurada'},
+      area_10k:       {name:'Conquistador',         desc:'Zona de 10.000 m² asegurada'},
+      total_area_1ha: {name:'1 hectárea',           desc:'Área total alcanzó 1 ha'},
+      total_area_10ha:{name:'10 hectáreas',         desc:'Área total alcanzó 10 ha'},
+      count_3:        {name:'3 zonas',              desc:'Aseguraste 3 zonas'},
+      count_10:       {name:'10 zonas',             desc:'Aseguraste 10 zonas'},
+      count_30:       {name:'30 zonas',             desc:'Aseguraste 30 zonas'},
+      streak_3:       {name:'Racha de 3 días',      desc:'Corriste 3 días seguidos'},
+      streak_7:       {name:'Racha de 7 días',      desc:'Corriste 7 días seguidos'},
+    },
+  },
+};
+
+let currentLang = 'en';
+
+function t(key, vars) {
+  const lang = TRANSLATIONS[currentLang] || TRANSLATIONS['en'];
+  let str = lang[key] !== undefined ? lang[key] : (TRANSLATIONS['en'][key] || key);
+  if (vars) { for (const [k,v] of Object.entries(vars)) str = str.replace(`{${k}}`, v); }
+  return str;
+}
+
+function getAchievement(id) {
+  const lang = TRANSLATIONS[currentLang] || TRANSLATIONS['en'];
+  return (lang.ach && lang.ach[id]) || TRANSLATIONS['en'].ach[id] || {name:id, desc:''};
+}
+
+function applyLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('rundom-lang', lang);
+  // Update all data-i18n elements
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  // Highlight active lang button
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.lang === lang);
+  });
+  // Refresh dynamic content
+  updateBottomBar();
+  if (!isTracking) {
+    if (records.length > 0) setStatus(t('statusLoaded', {n: records.length}));
+    else setStatus(t('statusStart'));
+  }
+  // Re-render open panels
+  if (document.getElementById('panel-stats').classList.contains('open')) renderStats();
+  if (document.getElementById('panel-history').classList.contains('open')) renderHistory();
+}
+
+// ═══════════════════════════════════════════════════════════════
 // 업적
 // ═══════════════════════════════════════════════════════════════
 const ACHIEVEMENTS = [
@@ -1307,9 +1571,10 @@ function showToast(ach) { toastQueue.push(ach); if(!toastTimer) nextToast(); }
 function nextToast() {
   if (!toastQueue.length) { toastTimer=null; return; }
   const ach=toastQueue.shift();
+  const achI18n = getAchievement(ach.id);
   document.getElementById('toast-icon').textContent=ach.icon;
-  document.getElementById('toast-name').textContent=ach.name;
-  document.getElementById('toast-desc').textContent=ach.desc;
+  document.getElementById('toast-name').textContent=achI18n.name;
+  document.getElementById('toast-desc').textContent=achI18n.desc;
   document.getElementById('achievement-toast').style.display='block';
   toastTimer=setTimeout(()=>{ document.getElementById('achievement-toast').style.display='none'; setTimeout(nextToast,300); },3000);
 }
@@ -1335,12 +1600,13 @@ function renderStats() {
 
   document.getElementById('sc-dist').innerHTML  = empty ? '0<span class="s-unit">km</span>'  : `${(records.reduce((s,r)=>s+r.distance,0)/1000).toFixed(2)}<span class="s-unit">km</span>`;
   document.getElementById('sc-area').innerHTML  = empty ? '0<span class="s-unit">m²</span>'  : `${Math.round(records.reduce((s,r)=>s+r.area,0)).toLocaleString()}<span class="s-unit">m²</span>`;
-  document.getElementById('sc-count').innerHTML = `${records.length}<span class="s-unit">회</span>`;
-  document.getElementById('sc-days').innerHTML  = empty ? '0<span class="s-unit">일</span>'  : `${new Set(records.map(r=>r.date.slice(0,10))).size}<span class="s-unit">일</span>`;
+  const uR=t('unitRuns'), uD=t('unitDays');
+  document.getElementById('sc-count').innerHTML = `${records.length}${uR?`<span class="s-unit">${uR}</span>`:''}`;
+  document.getElementById('sc-days').innerHTML  = empty ? `0${uD?`<span class="s-unit">${uD}</span>`:''}` : `${new Set(records.map(r=>r.date.slice(0,10))).size}${uD?`<span class="s-unit">${uD}</span>`:''}`;
 
   if (empty) {
     ['rec-dist','rec-area','rec-avg-dist','rec-avg-area','rec-first'].forEach(id=>document.getElementById(id).textContent='-');
-    document.getElementById('chart-wrap').innerHTML='<div class="chart-empty">아직 달리기 기록이 없습니다.</div>';
+    document.getElementById('chart-wrap').innerHTML=`<div class="chart-empty">${t('noRuns')}</div>`;
   } else {
     const totalDist=records.reduce((s,r)=>s+r.distance,0);
     const totalArea=records.reduce((s,r)=>s+r.area,0);
@@ -1357,11 +1623,13 @@ function renderStats() {
   const cnt=ACHIEVEMENTS.filter(a=>unlockedIds.has(a.id)).length;
   document.getElementById('badge-count').textContent=cnt;
   document.getElementById('badge-total').textContent=ACHIEVEMENTS.length;
-  grid.innerHTML=ACHIEVEMENTS.map(a=>`
-    <div class="badge-item ${unlockedIds.has(a.id)?'unlocked':'locked'}" title="${a.desc}">
+  grid.innerHTML=ACHIEVEMENTS.map(a=>{
+    const ai=getAchievement(a.id);
+    return `<div class="badge-item ${unlockedIds.has(a.id)?'unlocked':'locked'}" title="${ai.desc}">
       <div class="badge-icon">${a.icon}</div>
-      <div class="badge-name">${a.name}</div>
-    </div>`).join('');
+      <div class="badge-name">${ai.name}</div>
+    </div>`;
+  }).join('');
 }
 
 function drawBarChart() {
@@ -1406,7 +1674,7 @@ function drawBarChart() {
 function renderHistory() {
   const list=document.getElementById('history-list');
   if (!records.length) {
-    list.innerHTML='<div style="text-align:center;color:var(--dim);font-size:.84rem;padding:40px 0;">아직 기록이 없습니다.</div>';
+    list.innerHTML=`<div style="text-align:center;color:var(--dim);font-size:.84rem;padding:40px 0;">${t('histEmpty')}</div>`;
     return;
   }
   list.innerHTML=[...records].reverse().map(r=>`
@@ -1435,12 +1703,10 @@ function focusRecord(id) {
 // 탭 전환
 // ═══════════════════════════════════════════════════════════════
 function openTab(name) {
-  // 새 탭 + 기존 탭 모두 업데이트
-  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+  document.querySelectorAll('.tab').forEach(tb=>tb.classList.toggle('active', tb.dataset.tab===name));
   document.getElementById('panel-stats').classList.toggle('open', name==='stats');
   document.getElementById('panel-history').classList.toggle('open', name==='history');
-  document.getElementById('panel-multi').classList.toggle('open', name==='multi');
-  // 패널 열릴 때 pill bar + 맵 컨트롤 숨김, 맵일 때 표시
+  document.getElementById('panel-settings').classList.toggle('open', name==='settings');
   const pillIdle = document.getElementById('pill-idle');
   const pillRunning = document.getElementById('pill-running');
   const mapControls = document.getElementById('map-controls');
@@ -1456,9 +1722,8 @@ function openTab(name) {
     mapControls.style.display='none';
     hdr.style.display='none';
   }
-  if (name==='stats')   renderStats();
-  if (name==='history') renderHistory();
-  if (name==='multi')   renderMultiPanel();
+  if (name==='stats')    renderStats();
+  if (name==='history')  renderHistory();
   if (name==='map') setTimeout(()=>map.invalidateSize(),50);
 }
 
@@ -1519,7 +1784,7 @@ function renderMultiPanel() {
 
 async function createRoom() {
   const name = document.getElementById('mp-name-input').value.trim();
-  if (!name) { alert('닉네임을 입력해주세요.'); return; }
+  if (!name) { alert(t('alertNoName')); return; }
   initFirebase();
   const roomId = generateCode();
   const color  = MP_COLORS[0];
@@ -1534,11 +1799,11 @@ async function createRoom() {
 async function joinRoom() {
   const name = document.getElementById('mp-name-input').value.trim();
   const code = document.getElementById('mp-code-input').value.trim().toUpperCase();
-  if (!name) { alert('닉네임을 입력해주세요.'); return; }
-  if (code.length !== 6) { alert('방 코드는 6자리입니다.'); return; }
+  if (!name) { alert(t('alertNoName')); return; }
+  if (code.length !== 6) { alert(t('alertCodeLen')); return; }
   initFirebase();
   const snap = await db.ref(`rooms/${code}/players`).get();
-  if (!snap.exists()) { alert('존재하지 않는 방입니다.'); return; }
+  if (!snap.exists()) { alert(t('alertRoomNotFound')); return; }
   const players = snap.val();
   const idx = Object.keys(players).length % MP_COLORS.length;
   const color = MP_COLORS[idx];
@@ -1617,7 +1882,7 @@ function subscribeRoom(roomId) {
     });
     // 룸 칩 플레이어 수 업데이트
     const total = Object.keys(data).length;
-    document.getElementById('chip-player-count').textContent = `${total}명`;
+    document.getElementById('chip-player-count').textContent = t('playerCount', {n: total});
   });
   mpListeners.push(()=>posRef.off('value', posCb));
 
@@ -1659,7 +1924,7 @@ async function refreshPlayerList(roomId) {
       <span class="mp-rank">${medals[i]||i+1}</span>
       <div class="mp-dot" style="background:${p.color}"></div>
       <div class="mp-player-info">
-        <span class="mp-pname">${p.name}${id===myPlayerId?'<em>(나)</em>':''}</span>
+        <span class="mp-pname">${p.name}${id===myPlayerId?`<em>(${t('me')})</em>`:''}</span>
         <span class="mp-parea">${fmtArea(areaMap[id]||0)}</span>
       </div>
     </div>`).join('');
@@ -1694,19 +1959,7 @@ function leaveRoom() {
   document.getElementById('mp-setup').style.display='block';
 }
 
-// 버튼 이벤트
-document.getElementById('btn-create-room').addEventListener('click', createRoom);
-document.getElementById('btn-join-room').addEventListener('click', joinRoom);
-document.getElementById('btn-leave-room').addEventListener('click', ()=>{ if(confirm('방을 나가시겠습니까?')) leaveRoom(); });
-document.getElementById('btn-copy-code').addEventListener('click', ()=>{
-  navigator.clipboard.writeText(myRoomId||'').then(()=>{
-    const btn=document.getElementById('btn-copy-code');
-    btn.textContent='✓ 복사됨'; setTimeout(()=>btn.textContent='복사',1500);
-  });
-});
-document.getElementById('mp-code-input').addEventListener('input', e=>{
-  e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
-});
+// Multiplayer UI removed — listeners handled internally if Firebase configured
 
 // ═══════════════════════════════════════════════════════════════
 // 타이머
@@ -1748,7 +2001,7 @@ function closeTerritory() {
   coords=[]; totalDistance=0; lastPositions=[];
   document.getElementById('close-hint').style.display='none';
   if (startMarker) startMarker.setIcon(makeStartIcon(false));
-  setStatus('<span class="dot-pulse"></span>다음 구역을 달리세요!');
+  setStatus(`<span class="dot-pulse"></span>${t('statusNext')}`);
   document.getElementById('hud-dist').innerHTML='0.00 <span style="font-size:0.7rem;font-weight:400;color:var(--muted)">km</span>';
 }
 
@@ -1766,7 +2019,8 @@ function updateBottomBar() {
   const today = new Date().toISOString().slice(0,10);
   const todayDist = records.filter(r=>r.date.slice(0,10)===today).reduce((s,r)=>s+r.distance,0);
   document.getElementById('pill-today-dist').innerHTML = `${(todayDist/1000).toFixed(1)}<span class="unit">km</span>`;
-  document.getElementById('pill-territory-count').innerHTML = `${records.length}<span class="unit">개</span>`;
+  const uZ=t('unitZones');
+  document.getElementById('pill-territory-count').innerHTML = `${records.length}${uZ?`<span class="unit">${uZ}</span>`:''}` ;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1778,7 +2032,7 @@ function onPosition(pos) {
 
   if (coords.length===0&&!startMarker) {
     map.setView([lat,lng],17);
-    startMarker=L.marker([lat,lng],{icon:makeStartIcon(false)}).addTo(map).bindPopup('출발점');
+    startMarker=L.marker([lat,lng],{icon:makeStartIcon(false)}).addTo(map).bindPopup(t('startPopup'));
   }
 
   if (coords.length>0) {
@@ -1839,12 +2093,12 @@ function onPosition(pos) {
     if (startMarker) startMarker.setIcon(makeStartIcon(false));
   }
 
-  setStatus(`<span class="dot-pulse"></span>추적 중 · 정확도 ${Math.round(accuracy)}m`);
+  setStatus(`<span class="dot-pulse"></span>${t('statusTracking', {acc: Math.round(accuracy)})}`);
 }
 
 function onError(err) {
-  const m={1:'위치 권한 거부됨.',2:'위치를 가져올 수 없습니다.',3:'시간 초과'};
-  setStatus(m[err.code]||'오류 발생');
+  const m={1:t('errPermDenied'), 2:t('errUnavailable'), 3:t('errTimeout')};
+  setStatus(m[err.code]||t('errUnavailable'));
   isTracking=false;
   document.getElementById('pill-idle').style.display='flex';
   document.getElementById('pill-running').style.display='none';
@@ -1861,7 +2115,7 @@ function setStatus(html) { document.getElementById('status-bar').innerHTML=html;
 const fab=document.getElementById('fab');
 
 function startRun() {
-  if (!('geolocation' in navigator)) { setStatus('위치 서비스 미지원'); return; }
+  if (!('geolocation' in navigator)) { setStatus(t('statusNoGeo')); return; }
   isTracking=true;
   // UI 전환: idle → running
   document.getElementById('pill-idle').style.display='none';
@@ -1871,7 +2125,7 @@ function startRun() {
   document.querySelector('header').style.opacity='0';
   document.querySelector('header').style.pointerEvents='none';
   startTimer();
-  setStatus('<span class="dot-pulse"></span>위치 확인 중...');
+  setStatus(`<span class="dot-pulse"></span>${t('statusLocating')}`);
   watchId=navigator.geolocation.watchPosition(onPosition,onError,{
     enableHighAccuracy:true, maximumAge:2000, timeout:10000,
   });
@@ -1889,7 +2143,7 @@ function stopRun() {
   document.querySelector('header').style.opacity='1';
   document.querySelector('header').style.pointerEvents='';
   document.getElementById('close-hint').style.display='none';
-  setStatus(`완료 · 총 ${records.length}구역 확보`);
+  setStatus(t('statusDone', {n: records.length}));
   updateBottomBar();
 }
 
@@ -1924,12 +2178,12 @@ document.getElementById('btn-dismiss').addEventListener('click',()=>{
 // 초기화 버튼
 // ═══════════════════════════════════════════════════════════════
 document.getElementById('btn-reset-bottom').addEventListener('click',()=>{
-  if (!confirm('모든 기록을 삭제할까요?')) return;
+  if (!confirm(t('confirmReset'))) return;
   Object.values(polyLayers).forEach(l=>map.removeLayer(l));
   polyLayers={}; records=[]; saveRecords();
   updateBadgePill();
   renderHistory();
-  setStatus('기록이 초기화되었습니다.');
+  setStatus(t('statusReset'));
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -1952,6 +2206,12 @@ window.addEventListener('appinstalled',()=>{ btnInstHdr.style.display='none'; })
 // ═══════════════════════════════════════════════════════════════
 // 초기 로드
 // ═══════════════════════════════════════════════════════════════
+// ── Language init ──
+currentLang = localStorage.getItem('rundom-lang') || 'en';
+// Apply i18n to static elements and mark active button
+document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+document.querySelectorAll('.lang-btn').forEach(btn => { btn.classList.toggle('active', btn.dataset.lang === currentLang); });
+
 loadRecords();
 loadAchievements();
 drawAllRecords();
@@ -1959,7 +2219,7 @@ updateBadgePill();
 updateHeaderStats();
 updateBottomBar();
 
-// 이전 세션의 방에 자동 재접속
+// Auto-reconnect previous multiplayer room
 if (myRoomId && FIREBASE_READY) {
   initFirebase();
   subscribeRoom(myRoomId);
@@ -1967,11 +2227,11 @@ if (myRoomId && FIREBASE_READY) {
 }
 
 if (records.length>0) {
-  setStatus(`저장된 구역 ${records.length}개를 불러왔습니다.`);
+  setStatus(t('statusLoaded', {n: records.length}));
   const all=records.flatMap(r=>r.coords.map(c=>[c.lat,c.lng]));
   if (all.length) map.fitBounds(L.latLngBounds(all),{padding:[40,40]});
 } else {
-  setStatus('▶ 버튼을 눌러 달리기를 시작하세요.');
+  setStatus(t('statusStart'));
 }
 
 </script>
