@@ -832,6 +832,118 @@
       0%   { transform: scale(0.8); opacity: 0.7; }
       100% { transform: scale(1.6); opacity: 0; }
     }
+
+    /* ════════════════════════════════ ONBOARDING */
+    #onboarding {
+      position: fixed; inset: 0;
+      background: var(--bg);
+      z-index: 10000;
+      display: flex; align-items: center; justify-content: center;
+      padding: 32px;
+    }
+    #onboarding.hidden { display: none; }
+    .onboard-card {
+      width: 100%; max-width: 320px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .onboard-logo {
+      width: 72px; height: 72px;
+      margin-bottom: 20px;
+      filter: drop-shadow(0 0 24px rgba(255,228,77,0.55));
+    }
+    .onboard-title {
+      font-size: 2.4rem; font-weight: 900;
+      color: var(--text); letter-spacing: -1.5px; margin-bottom: 4px;
+    }
+    .onboard-title em { color: var(--accent); font-style: normal; }
+    .onboard-sub {
+      font-size: 0.8rem; color: var(--muted);
+      letter-spacing: 1.5px; text-transform: uppercase;
+      margin-bottom: 48px;
+    }
+    .onboard-label {
+      font-size: 0.7rem; font-weight: 700; color: var(--accent);
+      text-transform: uppercase; letter-spacing: 1.5px;
+      align-self: flex-start; margin-bottom: 8px;
+    }
+    .onboard-input {
+      width: 100%;
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 14px; padding: 14px 16px;
+      font-size: 1rem; font-family: 'Space Grotesk', sans-serif;
+      color: var(--text); outline: none;
+      margin-bottom: 14px; transition: border-color 0.2s;
+    }
+    .onboard-input:focus { border-color: var(--accent); }
+    .onboard-input::placeholder { color: var(--dim); }
+    .onboard-btn {
+      width: 100%; background: var(--accent); color: #0a0c1a;
+      border: none; border-radius: 14px; padding: 16px;
+      font-size: 1rem; font-weight: 800;
+      font-family: 'Space Grotesk', sans-serif;
+      cursor: pointer; letter-spacing: 0.5px;
+      transition: transform 0.15s, box-shadow 0.2s;
+    }
+    .onboard-btn:hover { box-shadow: 0 0 24px rgba(255,228,77,0.4); }
+    .onboard-btn:active { transform: scale(0.97); }
+    .onboard-hint {
+      font-size: 0.7rem; color: var(--dim);
+      margin-top: 14px; text-align: center; line-height: 1.5;
+    }
+
+    /* ════════════════════════════════ TERRITORY LABEL */
+    .leaflet-tooltip.terr-lbl {
+      background: rgba(8,12,26,0.82);
+      border-radius: 8px; padding: 2px 8px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.68rem; font-weight: 700;
+      white-space: nowrap;
+      backdrop-filter: blur(4px);
+      box-shadow: none; pointer-events: none;
+    }
+    .leaflet-tooltip.terr-lbl::before { display: none; }
+
+    /* ════════════════════════════════ CLAIM CELEBRATION */
+    #claim-overlay {
+      position: fixed; inset: 0;
+      z-index: 9000;
+      display: none; align-items: center; justify-content: center;
+      background: rgba(8,12,26,0.88);
+      backdrop-filter: blur(6px);
+    }
+    #claim-overlay.show { display: flex; }
+    #claim-canvas {
+      position: absolute; inset: 0;
+      pointer-events: none;
+    }
+    .claim-content {
+      position: relative; z-index: 1;
+      text-align: center;
+      animation: claimIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    }
+    @keyframes claimIn {
+      from { transform: scale(0.5); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+    .claim-flag {
+      font-size: 4.5rem; line-height: 1; margin-bottom: 16px;
+      filter: drop-shadow(0 0 28px rgba(255,228,77,0.75));
+      animation: flagIn 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.05s both;
+    }
+    @keyframes flagIn {
+      from { transform: scale(0) rotate(-20deg); }
+      to   { transform: scale(1) rotate(0deg); }
+    }
+    .claim-title {
+      font-size: 3.2rem; font-weight: 900;
+      color: var(--accent); letter-spacing: -1px; line-height: 1.1;
+      text-shadow: 0 0 50px rgba(255,228,77,0.5);
+      margin-bottom: 14px;
+    }
+    .claim-area-val {
+      font-size: 1.1rem; font-weight: 600;
+      color: var(--muted); letter-spacing: 2px; text-transform: uppercase;
+    }
   </style>
 </head>
 <body>
@@ -1131,6 +1243,30 @@
   </div>
 </div>
 
+<!-- ════ ONBOARDING ════ -->
+<div id="onboarding">
+  <div class="onboard-card">
+    <img src="icon.svg" class="onboard-logo" alt="">
+    <div class="onboard-title">Run<em>dom</em></div>
+    <div class="onboard-sub">Run your Kingdom</div>
+    <div class="onboard-label">Runner Name</div>
+    <input id="onboard-name" class="onboard-input" type="text" maxlength="16"
+      placeholder="Your name..." autocomplete="off" autocorrect="off" spellcheck="false">
+    <button class="onboard-btn" onclick="saveOnboardName()">START RUNNING →</button>
+    <p class="onboard-hint">Your name will appear on every territory you claim</p>
+  </div>
+</div>
+
+<!-- ════ CLAIM CELEBRATION ════ -->
+<div id="claim-overlay">
+  <canvas id="claim-canvas"></canvas>
+  <div class="claim-content">
+    <div class="claim-flag">⚑</div>
+    <div class="claim-title">TERRITORY<br>CLAIMED</div>
+    <div class="claim-area-val" id="claim-area-val"></div>
+  </div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 
@@ -1176,6 +1312,7 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
 // ═══════════════════════════════════════════════════════════════
 let records     = [];
 let polyLayers  = {};
+let labelLayers = {};
 let unlockedIds = new Set();
 
 let isTracking    = false;
@@ -1280,12 +1417,19 @@ function drawRecord(rec) {
   const poly = L.polygon(rec.coords.map(c=>[c.lat,c.lng]),
     { color:rec.color, weight:3, fillColor:rec.color, fillOpacity:0.38 }
   ).addTo(map);
+  const ownerLine = rec.owner ? `<br>👤 <b style="color:${rec.color}">${rec.owner}</b>` : '';
   poly.bindPopup(
-    `<b style="color:${rec.color}">${fmtDate(rec.date)}</b><br>`+
+    `<b style="color:${rec.color}">${fmtDate(rec.date)}</b>${ownerLine}<br>`+
     `📏 ${(rec.distance/1000).toFixed(2)} km<br>`+
     `🗺 ${fmtArea(rec.area)}`
   );
   polyLayers[rec.id] = poly;
+  if (rec.owner) {
+    labelLayers[rec.id] = poly.bindTooltip(
+      `<span style="color:${rec.color};text-shadow:0 0 10px ${rec.color}80">${rec.owner}</span>`,
+      { permanent:true, direction:'center', className:'terr-lbl', interactive:false }
+    );
+  }
 }
 
 function drawAllRecords() { records.forEach(drawRecord); }
@@ -2020,25 +2164,22 @@ function closeTerritory() {
     id:Date.now().toString(), date:new Date().toISOString(),
     coords:[...coords], distance:totalDistance, area:calcArea(coords),
     color:nextColor(), duration:elapsed,
+    owner: myPlayerName || '',
   };
   records.push(rec); saveRecords();
   if (polyline) { map.removeLayer(polyline); polyline=null; }
   drawRecord(rec);
   updateHeaderStats();
   checkAchievements();
-  pushTerritoryToRoom(rec); // 멀티: Firebase에 동기화
-
-  // 결과 팝업
-  document.getElementById('res-dist').textContent=(rec.distance/1000).toFixed(2)+' km';
-  document.getElementById('res-area').textContent=fmtArea(rec.area);
-  document.getElementById('res-time').textContent=fmtTime(elapsed);
-  document.getElementById('result-overlay').classList.add('open');
+  pushTerritoryToRoom(rec);
 
   coords=[]; totalDistance=0; lastPositions=[];
   document.getElementById('close-hint').style.display='none';
   if (startMarker) startMarker.setIcon(makeStartIcon(false));
   setStatus(`<span class="dot-pulse"></span>${t('statusNext')}`);
   document.getElementById('hud-dist').innerHTML='0.00 <span style="font-size:0.7rem;font-weight:400;color:var(--muted)">km</span>';
+
+  showClaimCelebration(rec);
 }
 
 function updateHeaderStats() {
@@ -2216,7 +2357,7 @@ document.getElementById('btn-dismiss').addEventListener('click',()=>{
 document.getElementById('btn-reset-bottom').addEventListener('click',()=>{
   if (!confirm(t('confirmReset'))) return;
   Object.values(polyLayers).forEach(l=>map.removeLayer(l));
-  polyLayers={}; records=[]; saveRecords();
+  polyLayers={}; labelLayers={}; records=[]; saveRecords();
   updateBadgePill();
   renderHistory();
   setStatus(t('statusReset'));
@@ -2240,6 +2381,103 @@ btnInstHdr.addEventListener('click',async()=>{
 window.addEventListener('appinstalled',()=>{ btnInstHdr.style.display='none'; });
 
 // ═══════════════════════════════════════════════════════════════
+// 온보딩
+// ═══════════════════════════════════════════════════════════════
+function saveOnboardName() {
+  const input = document.getElementById('onboard-name');
+  const name = input.value.trim();
+  if (!name) { input.focus(); input.style.borderColor='var(--accent)'; return; }
+  myPlayerName = name;
+  localStorage.setItem('rundom-pname', name);
+  document.getElementById('onboarding').classList.add('hidden');
+  updateAvatarInitial();
+}
+document.getElementById('onboard-name').addEventListener('keydown', e => {
+  if (e.key === 'Enter') saveOnboardName();
+});
+
+function updateAvatarInitial() {
+  const avatar = document.querySelector('.logo-avatar');
+  if (myPlayerName) {
+    avatar.innerHTML = `<span style="font-size:1rem;font-weight:800">${myPlayerName[0].toUpperCase()}</span>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 점령 축하 효과
+// ═══════════════════════════════════════════════════════════════
+function pulsePolygon(poly, color) {
+  let n = 0;
+  const iv = setInterval(() => {
+    const bright = n % 2 === 0;
+    poly.setStyle({ fillOpacity: bright ? 0.72 : 0.38, weight: bright ? 7 : 3,
+      color: bright ? '#ffffff' : color });
+    if (++n > 9) { clearInterval(iv); poly.setStyle({ fillOpacity:0.38, weight:3, color }); }
+  }, 180);
+}
+
+function launchParticles() {
+  const canvas = document.getElementById('claim-canvas');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const ctx = canvas.getContext('2d');
+  const COLS = ['#FFE44D','#5BB4D8','#4ade80','#f472b6','#a78bfa','#fff'];
+  const cx = canvas.width / 2, cy = canvas.height / 2;
+  const particles = Array.from({length:90}, () => {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 4 + Math.random() * 9;
+    return {
+      x:cx, y:cy, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed - 3,
+      size: 3 + Math.random()*5, color: COLS[Math.floor(Math.random()*COLS.length)],
+      life:1, decay: 0.013 + Math.random()*0.018, gravity: 0.22,
+      spin: (Math.random()-0.5)*0.3, rot: Math.random()*Math.PI*2,
+    };
+  });
+  let raf;
+  (function animate() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    let alive = false;
+    particles.forEach(p => {
+      if (p.life <= 0) return;
+      alive = true;
+      p.x += p.vx; p.y += p.vy; p.vy += p.gravity;
+      p.vx *= 0.99; p.rot += p.spin; p.life -= p.decay;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.fillStyle = p.color;
+      ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+      ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size * 0.55);
+      ctx.restore();
+    });
+    if (alive) raf = requestAnimationFrame(animate);
+  })();
+  return () => cancelAnimationFrame(raf);
+}
+
+let _stopParticles = null;
+function showClaimCelebration(rec) {
+  const overlay = document.getElementById('claim-overlay');
+  document.getElementById('claim-area-val').textContent = fmtArea(rec.area);
+  overlay.classList.add('show');
+
+  if (_stopParticles) _stopParticles();
+  _stopParticles = launchParticles();
+
+  const poly = polyLayers[rec.id];
+  if (poly) pulsePolygon(poly, rec.color);
+
+  setTimeout(() => {
+    overlay.classList.remove('show');
+    if (_stopParticles) { _stopParticles(); _stopParticles = null; }
+    // 결과 팝업
+    document.getElementById('res-dist').textContent = (rec.distance/1000).toFixed(2)+' km';
+    document.getElementById('res-area').textContent = fmtArea(rec.area);
+    document.getElementById('res-time').textContent = fmtTime(rec.duration);
+    document.getElementById('result-overlay').classList.add('open');
+  }, 2600);
+}
+
+// ═══════════════════════════════════════════════════════════════
 // 초기 로드
 // ═══════════════════════════════════════════════════════════════
 // ── Language init ──
@@ -2254,6 +2492,14 @@ drawAllRecords();
 updateBadgePill();
 updateHeaderStats();
 updateBottomBar();
+
+// 온보딩: 이름이 없으면 첫 실행 화면 표시
+if (!myPlayerName) {
+  document.getElementById('onboarding').classList.remove('hidden');
+} else {
+  document.getElementById('onboarding').classList.add('hidden');
+  updateAvatarInitial();
+}
 
 // Auto-reconnect previous multiplayer room
 if (myRoomId && FIREBASE_READY) {
