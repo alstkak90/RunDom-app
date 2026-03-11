@@ -2514,6 +2514,14 @@ if (records.length>0) {
   if (all.length) map.fitBounds(L.latLngBounds(all),{padding:[40,40]});
 } else {
   setStatus(t('statusStart'));
+  // 기록 없을 때 — 사용자 위치로 지도 중심 이동 (권한 있으면)
+  if ('geolocation' in navigator) {
+    navigator.geolocation.getCurrentPosition(
+      pos => map.setView([pos.coords.latitude, pos.coords.longitude], 15),
+      () => {},  // 거부 시 서울 fallback 유지
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+    );
+  }
 }
 
 </script>
