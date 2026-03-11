@@ -1941,6 +1941,7 @@ let myRoomId      = localStorage.getItem('rundom-room') || null;
 let otherLayers        = {};  // playerId → [L.polygon]
 let otherPlayerMarkers = {};  // playerId → L.marker (실시간 위치)
 let mpListeners        = [];  // firebase off() 용
+let globalTerLayers    = {};  // "pid_date" → L.polygon (전체 글로벌 영토)
 
 function initFirebase() {
   if (!FIREBASE_READY || db) return;
@@ -2131,6 +2132,53 @@ function pushTerritoryToRoom(rec) {
   });
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 글로벌 영토 — 방 없이 모든 유저 영토 공유
+// ═══════════════════════════════════════════════════════════════
+function pushToGlobal(rec) {
+  if (!FIREBASE_READY || !db) return;
+  db.ref(`global_territories/${myPlayerId}/${rec.id}`).set({
+    playerId:   myPlayerId,
+    playerName: myPlayerName || '',
+    color:      rec.color,
+    coords:     rec.coords,
+    area:       rec.area,
+    distance:   rec.distance,
+    date:       rec.date,
+  });
+}
+
+function subscribeGlobalTerritories() {
+  if (!FIREBASE_READY || !db) return;
+  db.ref('global_territories').on('value', snap => {
+    // 기존 다른 유저 글로벌 레이어 제거
+    Object.values(globalTerLayers).forEach(l => map.removeLayer(l));
+    globalTerLayers = {};
+    if (!snap.exists()) return;
+    Object.entries(snap.val()).forEach(([pid, ters]) => {
+      if (pid === myPlayerId) return; // 내 영토는 이미 로컬에서 그림
+      Object.values(ters).forEach(t => {
+        const poly = L.polygon(t.coords.map(c => [c.lat, c.lng]), {
+          color: t.color, weight: 2.5,
+          fillColor: t.color, fillOpacity: 0.25,
+          dashArray: '6 4',  // 점선 테두리로 타인 영토 구분
+        }).addTo(map);
+        const name = t.playerName || '?';
+        poly.bindPopup(
+          `<b style="color:${t.color}">${name}</b><br>`+
+          `🗺 ${fmtArea(t.area)}<br>`+
+          `📏 ${(t.distance/1000).toFixed(2)} km`
+        );
+        poly.bindTooltip(
+          `<span style="color:${t.color};text-shadow:0 0 10px ${t.color}80">${name}</span>`,
+          { permanent:true, direction:'center', className:'terr-lbl', interactive:false }
+        );
+        globalTerLayers[`${pid}_${t.date}`] = poly;
+      });
+    });
+  });
+}
+
 function leaveRoom() {
   if (!myRoomId || !db) return;
   db.ref(`rooms/${myRoomId}/players/${myPlayerId}`).remove();
@@ -2180,6 +2228,7 @@ function closeTerritory() {
   updateHeaderStats();
   checkAchievements();
   pushTerritoryToRoom(rec);
+  pushToGlobal(rec);
 
   coords=[]; totalDistance=0; lastPositions=[];
   document.getElementById('close-hint').style.display='none';
@@ -2509,9 +2558,17 @@ if (!myPlayerName) {
   updateAvatarInitial();
 }
 
+// Firebase 시작: 글로벌 영토 구독 + 기존 로컬 기록 동기화
+if (FIREBASE_READY) {
+  initFirebase();
+  // 기존 로컬 기록을 글로벌에 올림 (idempotent — 덮어써도 무방)
+  records.forEach(rec => pushToGlobal(rec));
+  // 다른 유저 영토 실시간 구독
+  subscribeGlobalTerritories();
+}
+
 // Auto-reconnect previous multiplayer room
 if (myRoomId && FIREBASE_READY) {
-  initFirebase();
   subscribeRoom(myRoomId);
   updateRoomChip(myRoomId);
 }
