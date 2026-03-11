@@ -714,7 +714,39 @@
     #btn-reset-bottom:hover { border-color: var(--accent); color: var(--accent); }
 
     /* ════════════════════════════════ LEAFLET OVERRIDES */
-    .leaflet-tile-pane { filter: saturate(0.25) brightness(0.38) hue-rotate(200deg); }
+    /* Game-style map — teal/navy tint on CartoDB dark matter tiles */
+    .leaflet-tile-pane {
+      filter: sepia(0.5) hue-rotate(178deg) saturate(2.8) brightness(0.88) contrast(1.15);
+    }
+
+    /* Vignette: darkens edges, draws focus inward like a game camera */
+    #map-vignette {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(
+        ellipse 88% 88% at 50% 46%,
+        transparent 28%,
+        rgba(8,12,26,0.55) 68%,
+        rgba(8,12,26,0.88) 100%
+      );
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* Subtle scanline texture for extra game depth */
+    #map-scanlines {
+      position: absolute;
+      inset: 0;
+      background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 3px,
+        rgba(0,0,0,0.055) 3px,
+        rgba(0,0,0,0.055) 4px
+      );
+      pointer-events: none;
+      z-index: 11;
+    }
     .leaflet-popup-content-wrapper { background: rgba(15,22,41,0.96); color: var(--text); border-radius: 14px; backdrop-filter: blur(8px); border: 1px solid rgba(255,228,77,0.2); }
     .leaflet-popup-tip { background: rgba(15,22,41,0.96); }
     .leaflet-popup-content { font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem; }
@@ -829,8 +861,11 @@
 <!-- ════ MAIN ════ -->
 <div id="main">
 
-  <!-- 지도 -->
+  <!-- Map -->
   <div id="map"></div>
+  <!-- Game overlays -->
+  <div id="map-vignette"></div>
+  <div id="map-scanlines"></div>
 
   <!-- ════ ROOM CHIP (방 참가 중 지도 위 표시) ════ -->
   <div id="room-chip">
@@ -1130,9 +1165,10 @@ const COLORS = [
 // 지도
 // ═══════════════════════════════════════════════════════════════
 const map = L.map('map', { center:[37.5665,126.9780], zoom:15, zoomControl:false });
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  maxZoom:19,
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+  subdomains: 'abcd',
+  maxZoom: 19,
 }).addTo(map);
 
 // ═══════════════════════════════════════════════════════════════
