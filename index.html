@@ -730,7 +730,7 @@
         rgba(8,12,26,0.88) 100%
       );
       pointer-events: none;
-      z-index: 10;
+      z-index: 450;
     }
 
     /* Subtle scanline texture for extra game depth */
@@ -745,7 +745,7 @@
         rgba(0,0,0,0.055) 4px
       );
       pointer-events: none;
-      z-index: 11;
+      z-index: 451;
     }
     .leaflet-popup-content-wrapper { background: rgba(15,22,41,0.96); color: var(--text); border-radius: 14px; backdrop-filter: blur(8px); border: 1px solid rgba(255,228,77,0.2); }
     .leaflet-popup-tip { background: rgba(15,22,41,0.96); }
@@ -1307,6 +1307,12 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
   maxZoom: 19,
 }).addTo(map);
 
+// vignette/scanlines를 map 컨테이너 안으로 이동
+// (#map 밖에 있으면 Leaflet 툴팁 레이어 위에 덮여서 라벨이 안 보임)
+// Leaflet z-index: tile=200, overlay=400, marker=600, tooltip=650
+// 450/451 → 폴리곤 위, 툴팁 아래
+;['map-vignette','map-scanlines'].forEach(id => map.getContainer().appendChild(document.getElementById(id)));
+
 // ═══════════════════════════════════════════════════════════════
 // 상태
 // ═══════════════════════════════════════════════════════════════
@@ -1424,9 +1430,11 @@ function drawRecord(rec) {
     `🗺 ${fmtArea(rec.area)}`
   );
   polyLayers[rec.id] = poly;
-  if (rec.owner) {
+  // owner 없는 기존 기록은 현재 사용자 이름으로 fallback (로컬 기록은 항상 내 것)
+  const owner = rec.owner || myPlayerName || '';
+  if (owner) {
     labelLayers[rec.id] = poly.bindTooltip(
-      `<span style="color:${rec.color};text-shadow:0 0 10px ${rec.color}80">${rec.owner}</span>`,
+      `<span style="color:${rec.color};text-shadow:0 0 10px ${rec.color}80">${owner}</span>`,
       { permanent:true, direction:'center', className:'terr-lbl', interactive:false }
     );
   }
