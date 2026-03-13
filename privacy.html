@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — Rundom</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:      #080c1a;
+      --surface: #0f1629;
+      --border:  rgba(255,255,255,0.08);
+      --accent:  #FFE44D;
+      --text:    #ffffff;
+      --muted:   #7a9cc0;
+      --dim:     #3d5270;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Space Grotesk', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+    .page {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: var(--accent); text-decoration: none;
+      font-size: 0.85rem; font-weight: 600;
+      margin-bottom: 40px;
+      opacity: 0.8; transition: opacity 0.2s;
+    }
+    .back-link:hover { opacity: 1; }
+    .app-badge {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 32px;
+    }
+    .app-badge img { width: 48px; height: 48px; }
+    .app-badge-name { font-size: 1.4rem; font-weight: 800; }
+    .app-badge-name em { color: var(--accent); font-style: normal; }
+    h1 {
+      font-size: 2rem; font-weight: 900;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+    .last-updated {
+      font-size: 0.8rem; color: var(--muted);
+      margin-bottom: 40px;
+    }
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 24px;
+      margin-bottom: 40px;
+    }
+    .toc-title {
+      font-size: 0.7rem; font-weight: 700; color: var(--accent);
+      text-transform: uppercase; letter-spacing: 1.5px;
+      margin-bottom: 12px;
+    }
+    .toc ol { padding-left: 18px; }
+    .toc li { margin-bottom: 4px; }
+    .toc a { color: var(--muted); text-decoration: none; font-size: 0.85rem; }
+    .toc a:hover { color: var(--accent); }
+    section { margin-bottom: 44px; }
+    h2 {
+      font-size: 1.2rem; font-weight: 800;
+      color: var(--accent);
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    p { color: #c8d8ea; margin-bottom: 12px; font-size: 0.93rem; }
+    ul, ol { padding-left: 20px; margin-bottom: 12px; }
+    li { color: #c8d8ea; font-size: 0.93rem; margin-bottom: 6px; }
+    strong { color: var(--text); }
+    .highlight-box {
+      background: var(--surface);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 10px 10px 0;
+      padding: 14px 18px;
+      margin: 16px 0;
+    }
+    .highlight-box p { margin: 0; }
+    table {
+      width: 100%; border-collapse: collapse;
+      margin: 16px 0; font-size: 0.87rem;
+    }
+    th {
+      text-align: left; padding: 10px 14px;
+      background: var(--surface);
+      color: var(--accent); font-weight: 700;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 10px 14px; color: #c8d8ea;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      vertical-align: top;
+    }
+    .contact-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+    }
+    .contact-card p { margin-bottom: 6px; }
+    footer {
+      margin-top: 60px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      font-size: 0.75rem; color: var(--dim);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <a class="back-link" href="/">← Back to Rundom</a>
+
+  <div class="app-badge">
+    <img src="icon.svg" alt="Rundom icon">
+    <span class="app-badge-name">Run<em>dom</em></span>
+  </div>
+
+  <h1>Privacy Policy</h1>
+  <p class="last-updated">Last updated: March 2026</p>
+
+  <div class="highlight-box">
+    <p><strong>Short version:</strong> Rundom collects your GPS location only while you are actively running in the app. Your data is stored on your device. If you use the optional global map feature, territory data (GPS paths and your chosen username) is stored on Firebase (Google). We never sell your data.</p>
+  </div>
+
+  <div class="toc">
+    <div class="toc-title">Contents</div>
+    <ol>
+      <li><a href="#who-we-are">Who We Are</a></li>
+      <li><a href="#what-we-collect">Information We Collect</a></li>
+      <li><a href="#how-we-use">How We Use Your Information</a></li>
+      <li><a href="#data-storage">Data Storage &amp; Retention</a></li>
+      <li><a href="#third-parties">Third-Party Services</a></li>
+      <li><a href="#cross-border">Cross-Border Data Transfers</a></li>
+      <li><a href="#your-rights">Your Rights</a></li>
+      <li><a href="#children">Children's Privacy</a></li>
+      <li><a href="#changes">Changes to This Policy</a></li>
+      <li><a href="#contact">Contact Us</a></li>
+    </ol>
+  </div>
+
+  <!-- 1 -->
+  <section id="who-we-are">
+    <h2>1. Who We Are</h2>
+    <p>Rundom ("we", "our", or "us") is a location-based running game developed and operated as an independent application. The app is available at <strong>rundom-app.pages.dev</strong> and distributed via the Google Play Store.</p>
+    <p>This Privacy Policy is governed by and compliant with the <strong>Australian Privacy Act 1988 (Cth)</strong> and the Australian Privacy Principles (APPs).</p>
+  </section>
+
+  <!-- 2 -->
+  <section id="what-we-collect">
+    <h2>2. Information We Collect</h2>
+
+    <table>
+      <tr>
+        <th>Data</th>
+        <th>When collected</th>
+        <th>Why</th>
+      </tr>
+      <tr>
+        <td><strong>GPS / Location</strong></td>
+        <td>Only while the app is open and you have pressed START</td>
+        <td>To record your running route and create territory polygons</td>
+      </tr>
+      <tr>
+        <td><strong>Username</strong></td>
+        <td>When you first open the app (you choose it yourself)</td>
+        <td>To label your territories on the map</td>
+      </tr>
+      <tr>
+        <td><strong>Territory data</strong></td>
+        <td>Each time you complete a run</td>
+        <td>GPS path, area, distance, duration — used to draw your territory</td>
+      </tr>
+      <tr>
+        <td><strong>Anonymous player ID</strong></td>
+        <td>On first launch (randomly generated)</td>
+        <td>To distinguish your territories from other users' in multiplayer</td>
+      </tr>
+      <tr>
+        <td><strong>Run statistics</strong></td>
+        <td>Each time you complete a run</td>
+        <td>Distance, time, pace — displayed in your personal stats</td>
+      </tr>
+    </table>
+
+    <p>We do <strong>not</strong> collect: real name, email address, phone number, payment information, contacts, photos, or any other personal data beyond what is listed above.</p>
+    <p>Location data is collected <strong>only in the foreground</strong> — the app does not track your location when closed or running in the background.</p>
+  </section>
+
+  <!-- 3 -->
+  <section id="how-we-use">
+    <h2>3. How We Use Your Information</h2>
+    <ul>
+      <li>To display your running territories on the map</li>
+      <li>To calculate and show your personal running statistics (distance, pace, area captured)</li>
+      <li>To show your territories to other Rundom users on the global map (if Firebase is configured)</li>
+      <li>To track achievements and personal records</li>
+      <li>To distinguish you from other players in multiplayer rooms</li>
+    </ul>
+    <p>We do <strong>not</strong> use your data for advertising, profiling, or any purpose beyond operating the game.</p>
+  </section>
+
+  <!-- 4 -->
+  <section id="data-storage">
+    <h2>4. Data Storage &amp; Retention</h2>
+    <p><strong>Local storage (your device):</strong> All run records, achievements, and settings are stored in your browser's <code>localStorage</code>. This data stays on your device and is never sent anywhere unless you use the global map feature.</p>
+    <p><strong>Firebase (remote, optional):</strong> If the global territory map feature is enabled, your territory GPS paths, username, and anonymous player ID are stored in Google Firebase Realtime Database. This data remains until you clear your records in the app or request deletion.</p>
+    <p><strong>Deletion:</strong> You can delete all locally stored data at any time via <em>Settings → Clear All Records</em> in the app. To request deletion of Firebase data, contact us (see Section 10).</p>
+  </section>
+
+  <!-- 5 -->
+  <section id="third-parties">
+    <h2>5. Third-Party Services</h2>
+    <p>Rundom uses the following third-party services:</p>
+    <table>
+      <tr>
+        <th>Service</th>
+        <th>Provider</th>
+        <th>Purpose</th>
+        <th>Data shared</th>
+      </tr>
+      <tr>
+        <td>Firebase Realtime Database</td>
+        <td>Google LLC</td>
+        <td>Global territory storage &amp; multiplayer</td>
+        <td>Username, player ID, GPS territory paths</td>
+      </tr>
+      <tr>
+        <td>CartoDB Dark Matter tiles</td>
+        <td>CARTO / OpenStreetMap</td>
+        <td>Map tile rendering</td>
+        <td>Your approximate map view coordinates (standard tile requests)</td>
+      </tr>
+      <tr>
+        <td>Google Fonts</td>
+        <td>Google LLC</td>
+        <td>Typography (Space Grotesk)</td>
+        <td>IP address (standard web font request)</td>
+      </tr>
+      <tr>
+        <td>Cloudflare Pages</td>
+        <td>Cloudflare Inc.</td>
+        <td>App hosting</td>
+        <td>Standard web server logs (IP, user agent)</td>
+      </tr>
+    </table>
+    <p>We do not use any third-party advertising networks or analytics SDKs.</p>
+  </section>
+
+  <!-- 6 -->
+  <section id="cross-border">
+    <h2>6. Cross-Border Data Transfers</h2>
+    <p>Rundom is operated from Australia. When you use the global map feature, your territory data is stored on Google Firebase servers, which are primarily located in the <strong>United States</strong>. By using this feature, you consent to your data being transferred to and stored in the United States.</p>
+    <p>Google LLC participates in data transfer frameworks and applies appropriate safeguards under their <a href="https://policies.google.com/privacy" target="_blank" rel="noopener" style="color:var(--accent)">Privacy Policy</a>. This transfer is made in accordance with Australian Privacy Principle 8 (APP 8).</p>
+  </section>
+
+  <!-- 7 -->
+  <section id="your-rights">
+    <h2>7. Your Rights</h2>
+    <p>Under the Australian Privacy Act 1988, you have the right to:</p>
+    <ul>
+      <li><strong>Access</strong> — request a copy of the personal information we hold about you</li>
+      <li><strong>Correction</strong> — request that we correct inaccurate information</li>
+      <li><strong>Deletion</strong> — request deletion of your data from our Firebase database</li>
+      <li><strong>Opt out</strong> — stop using the app and clear all local data at any time</li>
+    </ul>
+    <p>To exercise any of these rights, contact us via the details in Section 10. We will respond within <strong>30 days</strong>.</p>
+    <p>If you believe we have breached your privacy rights, you may lodge a complaint with the <strong>Office of the Australian Information Commissioner (OAIC)</strong> at <a href="https://www.oaic.gov.au" target="_blank" rel="noopener" style="color:var(--accent)">oaic.gov.au</a>.</p>
+  </section>
+
+  <!-- 8 -->
+  <section id="children">
+    <h2>8. Children's Privacy</h2>
+    <p>Rundom is not directed at children under the age of 13. We do not knowingly collect personal information from children under 13. If you believe a child under 13 has provided us with personal information, please contact us and we will promptly delete it.</p>
+  </section>
+
+  <!-- 9 -->
+  <section id="changes">
+    <h2>9. Changes to This Policy</h2>
+    <p>We may update this Privacy Policy from time to time. When we do, we will update the "Last updated" date at the top of this page. Continued use of the app after changes constitutes acceptance of the updated policy.</p>
+    <p>For significant changes, we will make reasonable efforts to notify users through the app.</p>
+  </section>
+
+  <!-- 10 -->
+  <section id="contact">
+    <h2>10. Contact Us</h2>
+    <p>If you have any questions, access requests, or complaints about this Privacy Policy or our data practices, please contact us:</p>
+    <div class="contact-card">
+      <p><strong>Rundom</strong></p>
+      <p>📍 Australia</p>
+      <p>📧 <a href="mailto:alstkak90@gmail.com" style="color:var(--accent)">alstkak90@gmail.com</a></p>
+      <p style="margin-top:12px; color:var(--muted); font-size:0.82rem;">We aim to respond to all privacy-related inquiries within 30 days.</p>
+    </div>
+  </section>
+
+  <footer>
+    <p>© 2026 Rundom. All rights reserved.</p>
+    <p style="margin-top:6px">This policy complies with the Australian Privacy Act 1988 (Cth) and Australian Privacy Principles (APPs).</p>
+  </footer>
+
+</div>
+</body>
+</html>
