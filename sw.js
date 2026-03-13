@@ -1,4 +1,4 @@
-const CACHE = 'rundom-v3';
+const CACHE = 'rundom-v4';
 
 const SHELL = [
   '/',
@@ -67,3 +67,19 @@ self.addEventListener('fetch', e => {
       .catch(() => caches.match(e.request))
   );
 });
+
+// ── Background Sync: 오프라인 중 저장된 영토 재전송 ───────────
+self.addEventListener('sync', e => {
+  if (e.tag === 'sync-territories') {
+    e.waitUntil(syncPendingTerritories());
+  }
+});
+
+async function syncPendingTerritories() {
+  // IndexedDB에서 pending 항목을 읽어 Firebase로 재전송
+  // (앱에서 navigator.serviceWorker.ready.then(sw => sw.sync.register('sync-territories')) 호출)
+  const clients = await self.clients.matchAll();
+  clients.forEach(client => {
+    client.postMessage({ type: 'SYNC_TERRITORIES' });
+  });
+}
