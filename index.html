@@ -890,6 +890,30 @@
       font-size: 0.7rem; color: var(--dim);
       margin-top: 14px; text-align: center; line-height: 1.5;
     }
+    .onboard-divider {
+      width: 100%; height: 1px; background: var(--border); margin: 22px 0;
+    }
+    .onboard-install-btn {
+      width: 100%; background: transparent;
+      border: 1.5px solid rgba(255,228,77,0.55); color: var(--accent);
+      border-radius: 14px; padding: 14px;
+      font-size: 0.9rem; font-weight: 700;
+      font-family: 'Space Grotesk', sans-serif;
+      cursor: pointer; transition: background 0.2s, border-color 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .onboard-install-btn:hover { background: rgba(255,228,77,0.08); border-color: var(--accent); }
+    .onboard-ios-hint {
+      font-size: 0.8rem; color: var(--muted);
+      text-align: center; line-height: 1.8; width: 100%;
+    }
+    .onboard-ios-hint strong { color: var(--accent); }
+    .onboard-ios-hint .share-icon {
+      display: inline-block; width: 20px; height: 20px;
+      background: var(--accent); border-radius: 5px;
+      color: #0a0c1a; font-size: 0.75rem; font-weight: 900;
+      line-height: 20px; text-align: center; vertical-align: middle; margin: 0 2px;
+    }
 
     /* ════════════════════════════════ TERRITORY LABEL */
     .leaflet-tooltip.terr-lbl {
@@ -1254,6 +1278,23 @@
       placeholder="Your name..." autocomplete="off" autocorrect="off" spellcheck="false">
     <button class="onboard-btn" onclick="saveOnboardName()">START RUNNING →</button>
     <p class="onboard-hint">Your name will appear on every territory you claim</p>
+
+    <!-- Android/Chrome: install button (shown when browser makes it available) -->
+    <div id="onboard-pwa-section" style="display:none; width:100%">
+      <div class="onboard-divider"></div>
+      <button class="onboard-install-btn" id="btn-onboard-install">
+        <span style="font-size:1.1rem">⬇</span> 앱으로 설치하기
+      </button>
+    </div>
+
+    <!-- iOS Safari: manual add-to-homescreen guide -->
+    <div id="onboard-ios-section" style="display:none; width:100%">
+      <div class="onboard-divider"></div>
+      <div class="onboard-ios-hint">
+        Safari에서 <span class="share-icon">↑</span> 공유 버튼 →<br>
+        <strong>"홈 화면에 추가"</strong>를 눌러 설치하세요
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2427,15 +2468,44 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').cat
 
 const btnInstHdr=document.getElementById('btn-install-hdr');
 let deferredPrompt=null;
-window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); deferredPrompt=e; btnInstHdr.style.display='block'; });
-btnInstHdr.addEventListener('click',async()=>{
+
+// 이미 설치(standalone)되어 있으면 설치 UI 전혀 표시 안 함
+const _isStandalone = window.matchMedia('(display-mode: standalone)').matches || !!navigator.standalone;
+const _isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+// iOS: beforeinstallprompt 없으므로 정적으로 안내 표시
+if (_isIOS && !_isStandalone) {
+  document.getElementById('onboard-ios-section').style.display = 'block';
+}
+
+// Android/Chrome: 브라우저가 설치 가능 시점에 이벤트 발생
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  btnInstHdr.style.display = 'block';
+  if (!_isStandalone) {
+    document.getElementById('onboard-pwa-section').style.display = 'block';
+  }
+});
+
+async function triggerInstall() {
   if (!deferredPrompt) return;
   deferredPrompt.prompt();
-  const {outcome}=await deferredPrompt.userChoice;
-  if (outcome==='accepted') btnInstHdr.style.display='none';
-  deferredPrompt=null;
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  if (outcome === 'accepted') {
+    btnInstHdr.style.display = 'none';
+    document.getElementById('onboard-pwa-section').style.display = 'none';
+  }
+}
+
+btnInstHdr.addEventListener('click', triggerInstall);
+document.getElementById('btn-onboard-install').addEventListener('click', triggerInstall);
+window.addEventListener('appinstalled', () => {
+  btnInstHdr.style.display = 'none';
+  document.getElementById('onboard-pwa-section').style.display = 'none';
+  document.getElementById('onboard-ios-section').style.display = 'none';
 });
-window.addEventListener('appinstalled',()=>{ btnInstHdr.style.display='none'; });
 
 // ═══════════════════════════════════════════════════════════════
 // 온보딩
