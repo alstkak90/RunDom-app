@@ -1,10 +1,14 @@
-const CACHE = 'running-game-v1';
+const CACHE = 'rundom-v3';
 
 const SHELL = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/privacy.html',
   '/icon.svg',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/icon-512-maskable.png',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
   'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -33,13 +37,16 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = e.request.url;
 
-  // 지도 타일: 캐시 우선 (오프라인에서도 이미 본 타일 표시)
-  if (url.includes('tile.openstreetmap.org')) {
+  // Firebase는 캐시하지 않음 (실시간 데이터)
+  if (url.includes('firebaseio.com') || url.includes('firebase')) return;
+
+  // CartoDB 지도 타일: 캐시 우선 (오프라인에서도 이미 본 타일 표시)
+  if (url.includes('basemaps.cartocdn.com') || url.includes('tile.openstreetmap.org')) {
     e.respondWith(
       caches.open(CACHE).then(c =>
         c.match(e.request).then(cached =>
           cached || fetch(e.request).then(resp => {
-            c.put(e.request, resp.clone());
+            if (resp.ok) c.put(e.request, resp.clone());
             return resp;
           })
         )
@@ -52,7 +59,6 @@ self.addEventListener('fetch', e => {
   e.respondWith(
     fetch(e.request)
       .then(resp => {
-        // 성공 응답은 캐시에도 저장
         if (resp.ok) {
           caches.open(CACHE).then(c => c.put(e.request, resp.clone()));
         }
