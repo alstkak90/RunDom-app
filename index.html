@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Rundom</title>
 
   <!-- PWA -->
@@ -11,7 +11,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Rundom" />
-  <link rel="apple-touch-icon" href="/icon.svg" />
+  <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+  <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512.png" />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -53,7 +54,12 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
     }
+    /* 입력 필드에서는 선택 허용 */
+    input, textarea { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
 
     /* ════════════════════════════════ HEADER (Map Overlay) */
     header {
@@ -74,7 +80,7 @@
     .logo-pill {
       display: flex; align-items: center; gap: 10px;
       background: rgba(15,22,41,0.88);
-      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
       border: 1px solid rgba(255,255,255,0.1);
       border-radius: 9999px;
       padding: 6px 14px 6px 8px;
@@ -100,7 +106,7 @@
     .badge-pill {
       display: flex; align-items: center; gap: 5px;
       background: rgba(15,22,41,0.88);
-      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
       border: 1px solid rgba(255,228,77,0.2);
       border-radius: 12px;
       padding: 5px 10px;
@@ -116,7 +122,7 @@
     .area-pill {
       display: flex; align-items: center; gap: 5px;
       background: rgba(15,22,41,0.88);
-      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
       border: 1px solid rgba(255,228,77,0.2);
       border-radius: 12px;
       padding: 5px 10px;
@@ -169,7 +175,7 @@
       width: 42px; height: 42px;
       border-radius: 50%;
       background: rgba(15,22,41,0.92);
-      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
       border: 1px solid rgba(255,228,77,0.18);
       color: var(--text);
       display: flex; align-items: center; justify-content: center;
@@ -203,7 +209,7 @@
     .hud-card {
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       background: rgba(15,22,41,0.82);
-      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
       border: 1px solid rgba(255,228,77,0.14);
       border-radius: 16px;
       padding: 12px 8px;
@@ -220,7 +226,7 @@
       left: 50%;
       transform: translateX(-50%);
       background: rgba(255,228,77,0.92);
-      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
       color: #0a0c1a;
       font-size: 0.8rem;
       font-weight: 800;
@@ -250,7 +256,7 @@
 
     .pill-bar {
       background: rgba(15,22,41,0.94);
-      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
       border: 1px solid rgba(255,228,77,0.18);
       border-radius: 2.5rem;
       padding: 6px;
@@ -428,7 +434,7 @@
       border: 1px solid rgba(255,228,77,0.14);
       border-radius: 16px;
       padding: 16px;
-      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
     }
     .stat-card .s-label { font-size:0.65rem; color:var(--muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px; }
     .stat-card .s-value { font-size:1.5rem; font-weight:800; color:var(--text); line-height:1; }
@@ -518,7 +524,7 @@
       position: fixed;
       inset: 0;
       background: rgba(0,0,0,0.7);
-      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
       z-index: 2000;
       align-items: center;
       justify-content: center;
@@ -565,7 +571,7 @@
       top: 16px;
       left:50%; transform:translateX(-50%);
       background: rgba(15,22,41,0.97);
-      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
       border:1px solid rgba(255,228,77,0.5);
       border-radius:16px;
       padding:12px 16px;
@@ -750,7 +756,7 @@
       pointer-events: none;
       z-index: 451;
     }
-    .leaflet-popup-content-wrapper { background: rgba(15,22,41,0.96); color: var(--text); border-radius: 14px; backdrop-filter: blur(8px); border: 1px solid rgba(255,228,77,0.2); }
+    .leaflet-popup-content-wrapper { background: rgba(15,22,41,0.96); color: var(--text); border-radius: 14px; -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px); border: 1px solid rgba(255,228,77,0.2); }
     .leaflet-popup-tip { background: rgba(15,22,41,0.96); }
     .leaflet-popup-content { font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem; }
     .leaflet-control-attribution { opacity: 0.3; font-size: 0.6rem; }
@@ -792,8 +798,8 @@
       align-items: center;
       gap: 8px;
       background: rgba(15,22,41,0.94);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
+      -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+      -webkit--webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
       border: 1px solid rgba(255,228,77,0.45);
       border-radius: 9999px;
       padding: 5px 14px 5px 10px;
@@ -932,7 +938,7 @@
       font-family: 'Space Grotesk', sans-serif;
       font-size: 0.68rem; font-weight: 700;
       white-space: nowrap;
-      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
       box-shadow: none; pointer-events: none;
     }
     .leaflet-tooltip.terr-lbl::before { display: none; }
@@ -943,7 +949,7 @@
       z-index: 9000;
       display: none; align-items: center; justify-content: center;
       background: rgba(8,12,26,0.88);
-      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
     }
     #claim-overlay.show { display: flex; }
     #claim-canvas {
@@ -2465,6 +2471,8 @@ function initFirebase() {
   firebase.initializeApp(FIREBASE_CONFIG);
   db   = firebase.database();
   auth = firebase.auth();
+  // iOS redirect 로그인 결과 처리 (signInWithRedirect 후 복귀 시)
+  auth.getRedirectResult().catch(() => {});
   auth.onAuthStateChanged(handleAuthChange);
 }
 
@@ -3227,7 +3235,14 @@ async function loginWithGoogle() {
   loginSetError('');
   try {
     const provider = new firebase.auth.GoogleAuthProvider();
-    await auth.signInWithPopup(provider);
+    // iOS Safari PWA: signInWithPopup 차단됨 → signInWithRedirect 사용
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || !!navigator.standalone;
+    if (isIOS || isStandalone) {
+      await auth.signInWithRedirect(provider);
+    } else {
+      await auth.signInWithPopup(provider);
+    }
   } catch(e) { loginSetError(e.message); }
 }
 async function loginWithEmailForm() {
@@ -3688,6 +3703,7 @@ function devFreehandMove(e) {
 
 function devFreehandTouchMove(e) {
   if (!devIsDrawing || !e.originalEvent.touches.length) return;
+  e.originalEvent.preventDefault(); // iOS: 스크롤/바운스 방지
   const touch = e.originalEvent.touches[0];
   const latlng = map.containerPointToLatLng(L.point(touch.clientX, touch.clientY));
   const pt = { lat: latlng.lat, lng: latlng.lng, t: Date.now() };
