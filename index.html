@@ -20,6 +20,9 @@
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <!-- Turf.js for polygon boolean operations (territory conquest) -->
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
 
   <style>
     :root {
@@ -716,7 +719,7 @@
     /* ════════════════════════════════ LEAFLET OVERRIDES */
     /* Game-style map — teal/navy tint on CartoDB dark matter tiles */
     .leaflet-tile-pane {
-      filter: sepia(0.5) hue-rotate(178deg) saturate(2.8) brightness(0.88) contrast(1.15);
+      filter: sepia(0.2) hue-rotate(170deg) saturate(1.4) brightness(1.05) contrast(1.1);
     }
 
     /* Vignette: darkens edges, draws focus inward like a game camera */
@@ -754,6 +757,13 @@
 
     /* GPS path glow */
     .gps-glow-path { filter: drop-shadow(0 0 8px rgba(255,228,77,0.9)); }
+
+    /* Territory attack blink */
+    @keyframes territory-attack {
+      0%,100% { opacity:1; }
+      40%     { opacity:0.08; }
+    }
+    .territory-attack { animation: territory-attack 0.55s ease-in-out 7; }
 
     /* 다크 툴팁 (다른 플레이어 마커) */
     .leaflet-tooltip-dark {
@@ -968,13 +978,194 @@
       font-size: 1.1rem; font-weight: 600;
       color: var(--muted); letter-spacing: 2px; text-transform: uppercase;
     }
+
+    /* ════════ LOGIN SCREEN ════════ */
+    #login-screen {
+      position:fixed;inset:0;z-index:88888;
+      background:var(--bg);display:flex;flex-direction:column;
+      align-items:center;justify-content:center;padding:24px;
+    }
+    #login-screen.hidden { display:none; }
+    .login-logo {
+      width:64px;height:64px;border-radius:20px;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      display:flex;align-items:center;justify-content:center;
+      font-size:2rem;margin-bottom:12px;
+    }
+    .login-title { font-size:1.6rem;font-weight:700;margin-bottom:4px; }
+    .login-sub { color:var(--muted);font-size:0.85rem;margin-bottom:32px; }
+    .login-box {
+      width:100%;max-width:360px;background:var(--surface);
+      border-radius:18px;padding:24px;border:1px solid var(--border);
+    }
+    .login-google-btn {
+      width:100%;display:flex;align-items:center;justify-content:center;gap:10px;
+      background:#fff;color:#333;border:none;border-radius:12px;
+      padding:13px;font-size:0.95rem;font-weight:600;cursor:pointer;
+      font-family:'Space Grotesk',sans-serif;
+    }
+    .login-google-btn:hover { background:#f5f5f5; }
+    .login-divider {
+      display:flex;align-items:center;gap:10px;
+      color:var(--dim);font-size:0.8rem;margin:18px 0;
+    }
+    .login-divider::before,.login-divider::after {
+      content:'';flex:1;height:1px;background:var(--border);
+    }
+    .login-input {
+      width:100%;background:var(--surface2);border:1px solid var(--border);
+      border-radius:10px;padding:12px 14px;color:#fff;
+      font-family:'Space Grotesk',sans-serif;font-size:0.95rem;
+      box-sizing:border-box;margin-bottom:10px;outline:none;
+    }
+    .login-input:focus { border-color:var(--accent); }
+    .login-btn-primary {
+      width:100%;background:var(--accent);color:#fff;border:none;
+      border-radius:12px;padding:13px;font-size:0.95rem;font-weight:700;
+      cursor:pointer;font-family:'Space Grotesk',sans-serif;margin-top:4px;
+    }
+    .login-btn-primary:disabled { opacity:0.5;cursor:not-allowed; }
+    .login-error {
+      color:#f87171;font-size:0.8rem;margin-top:10px;text-align:center;min-height:18px;
+    }
+    .login-toggle {
+      text-align:center;margin-top:16px;font-size:0.85rem;color:var(--muted);
+    }
+    .login-toggle a { color:var(--accent);cursor:pointer;text-decoration:none; }
+    .login-forgot {
+      text-align:right;margin-top:-4px;margin-bottom:10px;
+      font-size:0.78rem;color:var(--dim);cursor:pointer;
+    }
+    .login-forgot:hover { color:var(--accent); }
+
+    /* ════════ DEV RUNNER SELECT HUD ════════ */
+    #dev-runner-hud {
+      position:fixed;top:80px;left:50%;transform:translateX(-50%);
+      z-index:8888;background:rgba(5,8,14,0.92);backdrop-filter:blur(12px);
+      border:1px solid rgba(255,228,77,0.3);border-radius:14px;
+      padding:10px 18px;display:none;align-items:center;gap:10px;
+      font-size:0.82rem;color:#e6edf3;white-space:nowrap;
+      box-shadow:0 4px 20px rgba(0,0,0,0.5);
+    }
+    #dev-runner-hud .runner-dot {
+      width:14px;height:14px;border-radius:50%;display:inline-block;flex-shrink:0;
+    }
+    #dev-runner-hud .hud-name { font-weight:700;color:var(--accent); }
+    #dev-runner-hud .hud-hint { color:var(--dim);font-size:0.75rem; }
+    .dev-marker-selected {
+      outline:3px solid var(--accent) !important;outline-offset:2px;
+      border-radius:50%;animation:dev-select-pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes dev-select-pulse {
+      0%,100% { outline-color:var(--accent); }
+      50% { outline-color:rgba(255,228,77,0.3); }
+    }
+
+    /* ════════ DEV PANEL ════════ */
+    #dev-panel {
+      position:fixed;inset:0;background:rgba(5,8,14,0.98);z-index:99999;
+      display:none;flex-direction:column;font-family:'Space Grotesk',monospace;
+    }
+    #dev-fab {
+      position:fixed;top:70px;right:12px;z-index:9999;
+      background:#ff6b35;color:#000;font-size:0.65rem;font-weight:700;
+      padding:5px 8px;border-radius:6px;cursor:pointer;display:none;
+      border:none;font-family:'Space Grotesk',sans-serif;letter-spacing:0.5px;
+      box-shadow:0 2px 8px rgba(255,107,53,0.5);
+    }
+    .dev-header {
+      background:#0d1117;border-bottom:1px solid #30363d;
+      padding:12px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;
+    }
+    .dev-badge {
+      background:#ff6b35;color:#000;font-size:0.58rem;font-weight:900;
+      padding:2px 7px;border-radius:4px;text-transform:uppercase;letter-spacing:1px;
+    }
+    .dev-title {color:#58a6ff;font-weight:700;font-size:0.92rem;flex:1;}
+    .dev-close {background:none;border:none;color:#8b949e;font-size:1.3rem;cursor:pointer;padding:4px 8px;line-height:1;}
+    .dev-close:hover {color:#fff;}
+    .dev-tabs {
+      display:flex;background:#0d1117;border-bottom:1px solid #30363d;
+      overflow-x:auto;flex-shrink:0;
+    }
+    .dev-tab {
+      padding:8px 13px;font-size:0.7rem;font-weight:600;color:#8b949e;
+      border:none;background:none;cursor:pointer;white-space:nowrap;
+      border-bottom:2px solid transparent;font-family:inherit;
+    }
+    .dev-tab.active {color:#58a6ff;border-bottom-color:#58a6ff;}
+    .dev-content {flex:1;overflow-y:auto;padding:14px 16px;}
+    .dev-section {display:none;}
+    .dev-section.active {display:block;}
+    #dev-auth {
+      display:none;flex-direction:column;align-items:center;
+      justify-content:center;padding:40px 32px;gap:14px;flex:1;
+    }
+    #dev-auth.show {display:flex;}
+    #dev-main {display:none;flex-direction:column;flex:1;min-height:0;}
+    #dev-main.show {display:flex;}
+    .dev-auth-title {color:#ff6b35;font-weight:900;font-size:1.5rem;letter-spacing:-0.5px;}
+    .dev-auth-sub {color:#8b949e;font-size:0.8rem;text-align:center;max-width:260px;}
+    .dev-input {
+      width:100%;max-width:300px;background:#161b22;border:1px solid #30363d;
+      color:#e6edf3;padding:10px 14px;border-radius:8px;
+      font-family:inherit;font-size:0.9rem;box-sizing:border-box;
+    }
+    .dev-input:focus {outline:none;border-color:#58a6ff;}
+    .dev-btn {
+      padding:9px 18px;border-radius:8px;border:none;font-family:inherit;
+      font-weight:700;cursor:pointer;font-size:0.82rem;transition:opacity .15s;
+    }
+    .dev-btn:active {opacity:0.75;}
+    .dev-btn-primary {background:#238636;color:#fff;}
+    .dev-btn-danger  {background:#da3633;color:#fff;}
+    .dev-btn-warn    {background:#9e6a03;color:#fff;}
+    .dev-btn-blue    {background:#1f6feb;color:#fff;}
+    .dev-btn-ghost   {background:#30363d;color:#e6edf3;}
+    .dev-row {
+      display:flex;align-items:center;justify-content:space-between;
+      padding:11px 0;border-bottom:1px solid #21262d;gap:12px;
+    }
+    .dev-row:last-child {border-bottom:none;}
+    .dev-row-label {color:#e6edf3;font-size:0.82rem;font-weight:600;}
+    .dev-row-sub {color:#8b949e;font-size:0.7rem;margin-top:2px;}
+    .dev-row-right {display:flex;gap:8px;align-items:center;flex-shrink:0;}
+    .dev-log {
+      background:#0d1117;border:1px solid #30363d;border-radius:6px;
+      padding:10px;height:160px;overflow-y:auto;font-family:monospace;
+      font-size:0.7rem;color:#3fb950;white-space:pre-wrap;word-break:break-all;
+    }
+    .dev-log-err {color:#f85149;}.dev-log-warn {color:#d29922;}
+    .dev-slider {width:100%;accent-color:#58a6ff;margin:0;}
+    .dev-val {color:#58a6ff;font-family:monospace;font-size:0.8rem;min-width:36px;text-align:right;}
+    .dev-player-card {
+      background:#161b22;border:1px solid #30363d;border-radius:8px;
+      padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;
+    }
+    .dev-player-dot {
+      width:28px;height:28px;border-radius:50%;display:flex;align-items:center;
+      justify-content:center;font-weight:700;font-size:0.8rem;flex-shrink:0;
+    }
+    .dev-player-name {color:#e6edf3;font-size:0.82rem;font-weight:600;}
+    .dev-player-pos {color:#8b949e;font-size:0.68rem;font-family:monospace;}
+    .status-dot {
+      display:inline-block;width:8px;height:8px;border-radius:50%;
+      background:#8b949e;flex-shrink:0;
+    }
+    .status-dot.on {background:#3fb950;}
+    #dev-hint {
+      position:fixed;bottom:110px;left:50%;transform:translateX(-50%);
+      background:rgba(255,107,53,0.93);color:#000;padding:7px 18px;
+      border-radius:20px;font-size:0.78rem;font-weight:700;z-index:99998;
+      pointer-events:none;display:none;white-space:nowrap;
+    }
   </style>
 </head>
 <body>
 
 <!-- ════ HEADER (map overlay) ════ -->
 <header>
-  <div class="logo-pill">
+  <div class="logo-pill" onclick="devLogoTap()">
     <div class="logo-avatar"><span class="material-symbols-outlined" style="font-size:1.25rem;font-variation-settings:'FILL' 1,'wght' 600">directions_run</span></div>
     <div class="logo-info">
       <span class="logo-level" id="header-run-count">0 Runs</span>
@@ -1246,6 +1437,22 @@
         </a>
       </div>
 
+      <!-- Account -->
+      <div style="margin-top: 28px;">
+        <div class="section-title" style="margin-bottom:12px">Account</div>
+        <div id="settings-account-info" style="
+          background:var(--surface);border:1px solid var(--border);
+          border-radius:14px;padding:14px 16px;margin-bottom:10px;
+          font-size:0.85rem;color:var(--muted);
+        "></div>
+        <button onclick="doSignOut()" style="
+          width:100%;background:transparent;border:1px solid rgba(248,113,113,0.4);
+          border-radius:14px;padding:13px;color:#f87171;
+          font-family:'Space Grotesk',sans-serif;font-size:0.9rem;font-weight:600;
+          cursor:pointer;
+        ">Sign Out</button>
+      </div>
+
     </div>
   </div>
 
@@ -1284,7 +1491,32 @@
   </div>
 </div>
 
-<!-- ════ ONBOARDING ════ -->
+<!-- ════ LOGIN SCREEN ════ -->
+<div id="login-screen" class="hidden">
+  <div class="login-logo">👑</div>
+  <div class="login-title">Run<em>dom</em></div>
+  <div class="login-sub">Run your Kingdom</div>
+  <div class="login-box">
+    <!-- Google -->
+    <button class="login-google-btn" onclick="loginWithGoogle()">
+      <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.8 2.4 30.3 0 24 0 14.8 0 6.9 5.4 3 13.3l7.8 6C12.6 13.1 17.9 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 6.9-9.9 7.1-17z"/><path fill="#FBBC05" d="M10.8 28.7A14.6 14.6 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A24 24 0 0 0 0 24c0 3.9.9 7.5 2.5 10.7l8.3-6z"/><path fill="#34A853" d="M24 48c6.3 0 11.6-2.1 15.5-5.6l-7.5-5.8c-2.1 1.4-4.8 2.2-8 2.2-6.1 0-11.4-3.6-13.2-9.1l-8.3 6C6.9 42.6 14.8 48 24 48z"/></svg>
+      Continue with Google
+    </button>
+    <div class="login-divider">or</div>
+    <!-- Email form -->
+    <input id="login-email" class="login-input" type="email" placeholder="Email" autocomplete="email">
+    <input id="login-password" class="login-input" type="password" placeholder="Password" autocomplete="current-password">
+    <div class="login-forgot" id="login-forgot-link" onclick="loginForgotPassword()">Forgot password?</div>
+    <button class="login-btn-primary" id="login-submit-btn" onclick="loginWithEmailForm()">Sign In</button>
+    <div class="login-error" id="login-error"></div>
+    <div class="login-toggle">
+      <span id="login-toggle-text">Don't have an account?</span>
+      <a id="login-toggle-link" onclick="loginToggleMode()">Sign Up</a>
+    </div>
+  </div>
+</div>
+
+<!-- ════ ONBOARDING (username setup after first login) ════ -->
 <div id="onboarding">
   <div class="onboard-card">
     <img src="icon.svg" class="onboard-logo" alt="">
@@ -1349,6 +1581,8 @@ const FIREBASE_CONFIG = {
 const CLOSE_THRESHOLD   = 25;
 const MIN_DIST_TO_CLOSE = 150;
 const POINT_FILTER      = 3;
+// Dev mode override (mutable)
+const devConfig = { ct: CLOSE_THRESHOLD, md: MIN_DIST_TO_CLOSE, pf: POINT_FILTER };
 const STORAGE_KEY       = 'running-territories';
 const ACH_KEY           = 'running-achievements';
 
@@ -1361,10 +1595,9 @@ const COLORS = [
 // 지도
 // ═══════════════════════════════════════════════════════════════
 const map = L.map('map', { center:[37.5665,126.9780], zoom:15, zoomControl:false });
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
-  subdomains: 'abcd',
-  maxZoom: 19,
+L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
+  attribution: '© <a href="https://stadiamaps.com/">Stadia Maps</a> © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  maxZoom: 20,
 }).addTo(map);
 
 // vignette/scanlines를 map 컨테이너 안으로 이동
@@ -1380,6 +1613,9 @@ let records     = [];
 let polyLayers  = {};
 let labelLayers = {};
 let unlockedIds = new Set();
+let myLastLatLng      = null;  // 마지막 GPS 위치 (항상 업데이트)
+let attackedTerIds    = new Set(); // 이미 공격 감지한 영토 ID
+let knownGlobalTerIds = new Set(); // 이미 알림 보낸 글로벌 영토 key
 
 let isTracking    = false;
 let watchId       = null;
@@ -1420,6 +1656,193 @@ function haversine(a, b) {
   const Δφ=(b.lat-a.lat)*Math.PI/180, Δλ=(b.lng-a.lng)*Math.PI/180;
   const s=Math.sin(Δφ/2)**2+Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
   return R*2*Math.atan2(Math.sqrt(s),Math.sqrt(1-s));
+}
+
+// 점이 폴리곤 내부에 있는지 (Ray casting)
+function pointInPoly(pt, poly) {
+  let inside = false;
+  const x = pt.lng, y = pt.lat;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const xi = poly[i].lng, yi = poly[i].lat;
+    const xj = poly[j].lng, yj = poly[j].lat;
+    if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi))
+      inside = !inside;
+  }
+  return inside;
+}
+
+// 두 폴리곤이 겹치는지 (꼭짓점 포함 여부)
+function polygonsOverlap(a, b) {
+  return a.some(p => pointInPoly(p, b)) || b.some(p => pointInPoly(p, a));
+}
+
+// 폴리곤 무게중심
+function polyCentroid(coords) {
+  return {
+    lat: coords.reduce((s, c) => s + c.lat, 0) / coords.length,
+    lng: coords.reduce((s, c) => s + c.lng, 0) / coords.length,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 푸시 알림
+// ═══════════════════════════════════════════════════════════════
+async function requestNotifPermission() {
+  if (!('Notification' in window)) return false;
+  if (Notification.permission === 'granted') return true;
+  if (Notification.permission === 'denied') return false;
+  const result = await Notification.requestPermission();
+  return result === 'granted';
+}
+
+function showGameNotification(titleKey, bodyKey, vars = {}) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const title = t(titleKey, vars);
+  const body  = t(bodyKey,  vars);
+  const opts  = { body, icon: '/icons/icon-192.png', badge: '/icons/icon-192.png',
+                  tag: titleKey, renotify: true };
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.ready.then(reg => reg.showNotification(title, opts));
+  } else {
+    new Notification(title, opts);
+  }
+}
+
+// 영역 빨간색 깜빡임 (공격받았을 때)
+function triggerAttackBlink(poly, originalColor) {
+  const el = poly.getElement();
+  if (!el) return;
+  poly.setStyle({ color: '#ff2040', fillColor: '#ff2040', fillOpacity: 0.55, weight: 4 });
+  el.classList.add('territory-attack');
+  setTimeout(() => {
+    el.classList.remove('territory-attack');
+    poly.setStyle({ color: originalColor, fillColor: originalColor, fillOpacity: 0.38, weight: 3 });
+  }, 4200);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 영토 정복 (Conquest) — 새 영토가 기존 영토를 침범하면 클리핑
+// ═══════════════════════════════════════════════════════════════
+function coordsToTurfPoly(coords) {
+  const ring = coords.map(c => [c.lng, c.lat]);
+  ring.push([coords[0].lng, coords[0].lat]); // close ring
+  return turf.polygon([ring]);
+}
+
+function turfPolyToCoords(turfPoly) {
+  const ring = turf.getCoords(turfPoly)[0];
+  return ring.slice(0, -1).map(c => ({ lat: c[1], lng: c[0], t: Date.now() }));
+}
+
+/**
+ * 새 영토가 생성될 때 기존 영토 클리핑
+ * @param {Object} newRec - 새 영토 레코드
+ * @param {string} newOwnerId - 새 영토 소유자 ID
+ * @param {Array} targetList - 체크할 영토 리스트 ('records' 또는 devTerritories 등)
+ * @param {string} mode - 'records' | 'dev'
+ */
+function applyConquest(newRec, newOwnerId, targetList, mode) {
+  if (!window.turf || newRec.coords.length < 3) return;
+  let newTurf;
+  try { newTurf = coordsToTurfPoly(newRec.coords); } catch { return; }
+
+  const toRemove = [];
+  for (let i = 0; i < targetList.length; i++) {
+    const entry = targetList[i];
+    const entryRec = mode === 'dev' ? entry.rec : entry;
+    const entryOwnerId = mode === 'dev' ? entry.ownerId : (entryRec.ownerId || myPlayerId);
+
+    // 같은 소유자면 무시
+    if (entryOwnerId === newOwnerId) continue;
+    if (entryRec.coords.length < 3) continue;
+    if (entryRec.id === newRec.id) continue;
+
+    let oldTurf;
+    try { oldTurf = coordsToTurfPoly(entryRec.coords); } catch { continue; }
+
+    // 겹침 확인
+    let intersection;
+    try { intersection = turf.intersect(oldTurf, newTurf); } catch { continue; }
+    if (!intersection) continue; // 겹치지 않음
+
+    // 겹침 발생! → 기존 영토에서 새 영토 영역 빼기
+    let remainder;
+    try { remainder = turf.difference(oldTurf, newTurf); } catch { continue; }
+
+    if (!remainder) {
+      // 기존 영토가 완전히 정복됨 → 제거
+      toRemove.push(i);
+      if (mode === 'dev' && entry.poly) {
+        triggerAttackBlink(entry.poly, entry.color);
+        setTimeout(() => { try { map.removeLayer(entry.poly); } catch{} }, 4200);
+      } else if (mode === 'records' && polyLayers[entryRec.id]) {
+        triggerAttackBlink(polyLayers[entryRec.id], entryRec.color);
+        setTimeout(() => {
+          try { map.removeLayer(polyLayers[entryRec.id]); } catch{}
+          delete polyLayers[entryRec.id];
+          if (labelLayers[entryRec.id]) { delete labelLayers[entryRec.id]; }
+        }, 4200);
+      }
+    } else {
+      // 부분 정복 → 기존 영토를 남은 부분으로 리드로우
+      const remainType = remainder.geometry.type;
+      let newCoords;
+      if (remainType === 'Polygon') {
+        newCoords = turfPolyToCoords(remainder);
+      } else if (remainType === 'MultiPolygon') {
+        // 가장 큰 조각만 유지
+        const polys = remainder.geometry.coordinates;
+        let maxArea = 0, maxIdx = 0;
+        polys.forEach((p, idx) => {
+          const a = turf.area(turf.polygon(p));
+          if (a > maxArea) { maxArea = a; maxIdx = idx; }
+        });
+        newCoords = polys[maxIdx][0].slice(0, -1).map(c => ({ lat: c[1], lng: c[0], t: Date.now() }));
+      }
+
+      if (newCoords && newCoords.length >= 3) {
+        // 기존 영토 좌표 업데이트
+        entryRec.coords = newCoords;
+        entryRec.area = calcArea(newCoords);
+
+        if (mode === 'dev' && entry.poly) {
+          triggerAttackBlink(entry.poly, entry.color);
+          setTimeout(() => {
+            entry.poly.setLatLngs(newCoords.map(c => [c.lat, c.lng]));
+            entry.poly.setStyle({ color: entry.color, fillColor: entry.color, fillOpacity: 0.38, weight: 3 });
+          }, 4200);
+        } else if (mode === 'records' && polyLayers[entryRec.id]) {
+          triggerAttackBlink(polyLayers[entryRec.id], entryRec.color);
+          setTimeout(() => {
+            polyLayers[entryRec.id].setLatLngs(newCoords.map(c => [c.lat, c.lng]));
+            polyLayers[entryRec.id].setStyle({ color: entryRec.color, fillColor: entryRec.color, fillOpacity: 0.38, weight: 3 });
+          }, 4200);
+          // Firebase 업데이트
+          if (db && myPlayerId) {
+            db.ref('users/' + myPlayerId + '/territories/' + entryRec.id).update({
+              coords: newCoords, area: entryRec.area
+            });
+          }
+        }
+      } else {
+        toRemove.push(i); // 남은 조각이 너무 작으면 제거
+      }
+    }
+  }
+
+  // 제거 대상 처리 (역순)
+  toRemove.sort((a, b) => b - a).forEach(idx => {
+    if (mode === 'dev') {
+      targetList.splice(idx, 1);
+    } else if (mode === 'records') {
+      const removedRec = targetList[idx];
+      targetList.splice(idx, 1);
+      // Firebase에서도 삭제
+      if (db && myPlayerId) {
+        db.ref('users/' + myPlayerId + '/territories/' + removedRec.id).remove();
+      }
+    }
+  });
 }
 
 function calcArea(pts) {
@@ -1464,17 +1887,28 @@ function nextColor() { return COLORS[records.length % COLORS.length]; }
 // ═══════════════════════════════════════════════════════════════
 // 저장 / 불러오기
 // ═══════════════════════════════════════════════════════════════
-function saveRecords() { localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); }
-function loadRecords() {
-  try { records = JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); }
-  catch { records=[]; }
+function saveRecords() {
+  if (!db || !myPlayerId) return;
+  // 마지막 추가된 record만 Firebase에 저장 (전체 덮어쓰기 방지)
+  const rec = records[records.length - 1];
+  if (rec) db.ref('users/' + myPlayerId + '/territories/' + rec.id).set(rec);
+}
+async function loadRecords() {
+  if (!db || !myPlayerId) { records = []; return; }
+  const snap = await db.ref('users/' + myPlayerId + '/territories').once('value');
+  records = snap.val() ? Object.values(snap.val()) : [];
+  records.sort((a, b) => new Date(a.date) - new Date(b.date));
 }
 
-function loadAchievements() {
-  try { unlockedIds = new Set(JSON.parse(localStorage.getItem(ACH_KEY)||'[]')); }
-  catch { unlockedIds=new Set(); }
+async function loadAchievements() {
+  if (!db || !myPlayerId) { unlockedIds = new Set(); return; }
+  const snap = await db.ref('users/' + myPlayerId + '/achievements').once('value');
+  unlockedIds = new Set(snap.val() || []);
 }
-function saveAchievements() { localStorage.setItem(ACH_KEY, JSON.stringify([...unlockedIds])); }
+function saveAchievements() {
+  if (!db || !myPlayerId) return;
+  db.ref('users/' + myPlayerId + '/achievements').set([...unlockedIds]);
+}
 
 // ═══════════════════════════════════════════════════════════════
 // 지도 그리기
@@ -1546,6 +1980,12 @@ const TRANSLATIONS = {
     alertRoomNotFound:'Room not found.',
     confirmLeave:'Leave the room?',
     copy:'Copy', copied:'✓ Copied', me:'me',
+    notifAttackTitle:'⚔️ Territory Under Attack!',
+    notifAttackBody:'{name} claimed land overlapping your territory!',
+    notifNearPlayerTitle:'👟 Runner Nearby!',
+    notifNearPlayerBody:'{name} is running within 1 km of you!',
+    notifNearTerTitle:'🏴 Territory Claimed Nearby!',
+    notifNearTerBody:'{name} claimed {area} m² of land near you!',
     ach:{
       first_run:      {name:'First Run',            desc:'Secured your first zone'},
       dist_1km:       {name:'1 km Run',             desc:'Ran 1 km or more in a single run'},
@@ -1605,6 +2045,12 @@ const TRANSLATIONS = {
     alertRoomNotFound:'존재하지 않는 방입니다.',
     confirmLeave:'방을 나가시겠습니까?',
     copy:'복사', copied:'✓ 복사됨', me:'나',
+    notifAttackTitle:'⚔️ 영역 공격받음!',
+    notifAttackBody:'{name}이(가) 당신의 영역을 침범했습니다!',
+    notifNearPlayerTitle:'👟 근처에 러너 등장!',
+    notifNearPlayerBody:'{name}이(가) 1km 이내에서 달리고 있습니다!',
+    notifNearTerTitle:'🏴 근처에 새 영역 생성!',
+    notifNearTerBody:'{name}이(가) 근처에 {area}m² 영역을 점령했습니다!',
     ach:{
       first_run:      {name:'첫 달리기',   desc:'첫 번째 영역을 확보했습니다'},
       dist_1km:       {name:'1km 달리기',  desc:'한 번에 1km 이상 달렸습니다'},
@@ -1664,6 +2110,12 @@ const TRANSLATIONS = {
     alertRoomNotFound:'房间不存在。',
     confirmLeave:'确定要离开房间？',
     copy:'复制', copied:'✓ 已复制', me:'我',
+    notifAttackTitle:'⚔️ 领地遭到攻击！',
+    notifAttackBody:'{name} 占领了与您领地重叠的土地！',
+    notifNearPlayerTitle:'👟 附近有跑者！',
+    notifNearPlayerBody:'{name} 正在您1公里范围内跑步！',
+    notifNearTerTitle:'🏴 附近新增领地！',
+    notifNearTerBody:'{name} 在您附近占领了 {area}m² 的土地！',
     ach:{
       first_run:      {name:'初次跑步',   desc:'成功占领了第一个区域'},
       dist_1km:       {name:'1公里跑',    desc:'单次跑步超过1公里'},
@@ -1723,6 +2175,12 @@ const TRANSLATIONS = {
     alertRoomNotFound:'Sala no encontrada.',
     confirmLeave:'¿Salir de la sala?',
     copy:'Copiar', copied:'✓ Copiado', me:'yo',
+    notifAttackTitle:'⚔️ ¡Territorio bajo ataque!',
+    notifAttackBody:'¡{name} reclamó tierra que se superpone con tu territorio!',
+    notifNearPlayerTitle:'👟 ¡Corredor cercano!',
+    notifNearPlayerBody:'¡{name} está corriendo a menos de 1 km de ti!',
+    notifNearTerTitle:'🏴 ¡Territorio reclamado cerca!',
+    notifNearTerBody:'¡{name} reclamó {area} m² de tierra cerca de ti!',
     ach:{
       first_run:      {name:'Primera carrera',      desc:'Aseguraste tu primera zona'},
       dist_1km:       {name:'Carrera de 1 km',      desc:'Corriste más de 1 km en una sesión'},
@@ -1972,6 +2430,7 @@ function openTab(name) {
   }
   if (name==='stats')    renderStats();
   if (name==='history')  renderHistory();
+  if (name==='settings') updateSettingsAccountInfo();
   if (name==='map') setTimeout(()=>map.invalidateSize(),50);
 }
 
@@ -1986,17 +2445,15 @@ document.querySelectorAll('#tab-bar .tab').forEach(t=>t.addEventListener('click'
 const MP_COLORS = ['#FFE44D','#5BB4D8','#4ade80','#f472b6','#a78bfa','#fb923c','#34d399','#60a5fa'];
 
 const FIREBASE_READY = !!(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.databaseURL);
-let db = null;
+let db   = null;
+let auth = null;
+let currentUser = null;
 
-// 플레이어 식별자 (로컬 영속)
-let myPlayerId = localStorage.getItem('rundom-pid');
-if (!myPlayerId) {
-  myPlayerId = Math.random().toString(36).slice(2,10)+Date.now().toString(36);
-  localStorage.setItem('rundom-pid', myPlayerId);
-}
-let myPlayerName  = localStorage.getItem('rundom-pname') || '';
+// 플레이어 식별자 (Firebase Auth 후 설정됨)
+let myPlayerId   = null;
+let myPlayerName = '';
 let myPlayerColor = null;
-let myRoomId      = localStorage.getItem('rundom-room') || null;
+let myRoomId     = localStorage.getItem('rundom-room') || null;
 
 let otherLayers        = {};  // playerId → [L.polygon]
 let otherPlayerMarkers = {};  // playerId → L.marker (실시간 위치)
@@ -2006,7 +2463,9 @@ let globalTerLayers    = {};  // "pid_date" → L.polygon (전체 글로벌 영�
 function initFirebase() {
   if (!FIREBASE_READY || db) return;
   firebase.initializeApp(FIREBASE_CONFIG);
-  db = firebase.database();
+  db   = firebase.database();
+  auth = firebase.auth();
+  auth.onAuthStateChanged(handleAuthChange);
 }
 
 function generateCode() {
@@ -2034,15 +2493,14 @@ function renderMultiPanel() {
 async function createRoom() {
   const name = document.getElementById('mp-name-input').value.trim();
   if (!name) { alert(t('alertNoName')); return; }
-  initFirebase();
   const roomId = generateCode();
   const color  = MP_COLORS[0];
   await db.ref(`rooms/${roomId}/players/${myPlayerId}`).set({ name, color, joinedAt: Date.now() });
   myPlayerName  = name; myPlayerColor = color; myRoomId = roomId;
-  localStorage.setItem('rundom-pname', name);
   localStorage.setItem('rundom-room',  roomId);
   showRoomView(roomId);
   subscribeRoom(roomId);
+  requestNotifPermission();
 }
 
 async function joinRoom() {
@@ -2050,7 +2508,6 @@ async function joinRoom() {
   const code = document.getElementById('mp-code-input').value.trim().toUpperCase();
   if (!name) { alert(t('alertNoName')); return; }
   if (code.length !== 6) { alert(t('alertCodeLen')); return; }
-  initFirebase();
   const snap = await db.ref(`rooms/${code}/players`).get();
   if (!snap.exists()) { alert(t('alertRoomNotFound')); return; }
   const players = snap.val();
@@ -2058,10 +2515,10 @@ async function joinRoom() {
   const color = MP_COLORS[idx];
   await db.ref(`rooms/${code}/players/${myPlayerId}`).set({ name, color, joinedAt: Date.now() });
   myPlayerName  = name; myPlayerColor = color; myRoomId = code;
-  localStorage.setItem('rundom-pname', name);
   localStorage.setItem('rundom-room',  code);
   showRoomView(code);
   subscribeRoom(code);
+  requestNotifPermission();
 }
 
 function showRoomView(roomId) {
@@ -2085,17 +2542,31 @@ function subscribeRoom(roomId) {
     Object.values(otherLayers).forEach(ls=>ls.forEach(l=>map.removeLayer(l)));
     otherLayers = {};
     if (!snap.exists()) return;
-    Object.values(snap.val()).forEach(t => {
-      if (t.playerId === myPlayerId) return;
-      if (!otherLayers[t.playerId]) otherLayers[t.playerId]=[];
-      const poly = L.polygon(t.coords.map(c=>[c.lat,c.lng]),
-        { color:t.playerColor, weight:2, fillColor:t.playerColor, fillOpacity:0.38 }
+    Object.values(snap.val()).forEach(ter => {
+      if (ter.playerId === myPlayerId) return;
+      if (!otherLayers[ter.playerId]) otherLayers[ter.playerId]=[];
+      const poly = L.polygon(ter.coords.map(c=>[c.lat,c.lng]),
+        { color:ter.playerColor, weight:2, fillColor:ter.playerColor, fillOpacity:0.38 }
       ).addTo(map);
       poly.bindPopup(
-        `<b style="color:${t.playerColor}">${t.playerName}</b><br>`+
-        `${(t.distance/1000).toFixed(2)} km · ${fmtArea(t.area)}`
+        `<b style="color:${ter.playerColor}">${ter.playerName}</b><br>`+
+        `${(ter.distance/1000).toFixed(2)} km · ${fmtArea(ter.area)}`
       );
-      otherLayers[t.playerId].push(poly);
+      otherLayers[ter.playerId].push(poly);
+
+      // ── 공격 감지: 상대방 영토가 내 영토와 겹치는지 확인 ──
+      const terId = ter.id || ter.date;
+      if (!attackedTerIds.has(terId)) {
+        attackedTerIds.add(terId);
+        records.forEach(rec => {
+          if (polygonsOverlap(ter.coords, rec.coords)) {
+            const userPoly = polyLayers[rec.id];
+            if (userPoly) triggerAttackBlink(userPoly, rec.color);
+            showGameNotification('notifAttackTitle', 'notifAttackBody',
+              { name: ter.playerName || '?' });
+          }
+        });
+      }
     });
   });
   mpListeners.push(()=>terRef.off('value', terCb));
@@ -2112,6 +2583,14 @@ function subscribeRoom(roomId) {
       if (otherPlayerMarkers[pid]) {
         otherPlayerMarkers[pid].setLatLng([pos.lat, pos.lng]);
       } else {
+        // 새 플레이어 등장 — 1km 이내면 알림
+        if (myLastLatLng) {
+          const dist = haversine(myLastLatLng, { lat: pos.lat, lng: pos.lng });
+          if (dist <= 1000) {
+            showGameNotification('notifNearPlayerTitle', 'notifNearPlayerBody',
+              { name: pos.name || '?' });
+          }
+        }
         const iconHtml = `
           <div style="position:relative;width:32px;height:32px;">
             <div class="other-player-dot" style="background:${color};color:currentColor;">
@@ -2217,23 +2696,37 @@ function subscribeGlobalTerritories() {
     if (!snap.exists()) return;
     Object.entries(snap.val()).forEach(([pid, ters]) => {
       if (pid === myPlayerId) return; // 내 영토는 이미 로컬에서 그림
-      Object.values(ters).forEach(t => {
-        const poly = L.polygon(t.coords.map(c => [c.lat, c.lng]), {
-          color: t.color, weight: 2.5,
-          fillColor: t.color, fillOpacity: 0.25,
-          dashArray: '6 4',  // 점선 테두리로 타인 영토 구분
+      Object.values(ters).forEach(ter => {
+        const key = `${pid}_${ter.date}`;
+        const poly = L.polygon(ter.coords.map(c => [c.lat, c.lng]), {
+          color: ter.color, weight: 2.5,
+          fillColor: ter.color, fillOpacity: 0.25,
+          dashArray: '6 4',
         }).addTo(map);
-        const name = t.playerName || '?';
+        const name = ter.playerName || '?';
         poly.bindPopup(
-          `<b style="color:${t.color}">${name}</b><br>`+
-          `🗺 ${fmtArea(t.area)}<br>`+
-          `📏 ${(t.distance/1000).toFixed(2)} km`
+          `<b style="color:${ter.color}">${name}</b><br>`+
+          `🗺 ${fmtArea(ter.area)}<br>`+
+          `📏 ${(ter.distance/1000).toFixed(2)} km`
         );
         poly.bindTooltip(
-          `<span style="color:${t.color};text-shadow:0 0 10px ${t.color}80">${name}</span>`,
+          `<span style="color:${ter.color};text-shadow:0 0 10px ${ter.color}80">${name}</span>`,
           { permanent:true, direction:'center', className:'terr-lbl', interactive:false }
         );
-        globalTerLayers[`${pid}_${t.date}`] = poly;
+        globalTerLayers[key] = poly;
+
+        // ── 새 영토 — 1km 이내면 알림 ──
+        if (!knownGlobalTerIds.has(key)) {
+          knownGlobalTerIds.add(key);
+          if (myLastLatLng) {
+            const centroid = polyCentroid(ter.coords);
+            const dist = haversine(myLastLatLng, centroid);
+            if (dist <= 1000) {
+              showGameNotification('notifNearTerTitle', 'notifNearTerBody',
+                { name, area: Math.round(ter.area) });
+            }
+          }
+        }
       });
     });
   });
@@ -2285,6 +2778,8 @@ function closeTerritory() {
   records.push(rec); saveRecords();
   if (polyline) { map.removeLayer(polyline); polyline=null; }
   drawRecord(rec);
+  // 영토 정복: 다른 플레이어 글로벌 영토 체크 (dev 영토 포함)
+  if (devTerritories.length) applyConquest(rec, myPlayerId, devTerritories, 'dev');
   updateHeaderStats();
   checkAchievements();
   pushTerritoryToRoom(rec);
@@ -2322,6 +2817,7 @@ function updateBottomBar() {
 // ═══════════════════════════════════════════════════════════════
 function onPosition(pos) {
   const {latitude:lat,longitude:lng,accuracy}=pos.coords;
+  myLastLatLng = { lat, lng };
   const pt={lat,lng,t:Date.now()};
 
   if (coords.length===0&&!startMarker) {
@@ -2331,7 +2827,7 @@ function onPosition(pos) {
 
   if (coords.length>0) {
     const d=haversine(coords[coords.length-1],pt);
-    if (d<POINT_FILTER) return;
+    if (d<devConfig.pf) return;
     totalDistance+=d;
     lastPositions.push({d, t:pt.t});
     if (lastPositions.length>8) lastPositions.shift();
@@ -2374,12 +2870,12 @@ function onPosition(pos) {
   const distToStart=startMarker
     ? haversine(pt,{lat:startMarker.getLatLng().lat,lng:startMarker.getLatLng().lng})
     : Infinity;
-  const canClose=totalDistance>=MIN_DIST_TO_CLOSE&&coords.length>=10;
+  const canClose=totalDistance>=devConfig.md&&coords.length>=10;
 
-  if (canClose&&distToStart<=CLOSE_THRESHOLD) { closeTerritory(); return; }
+  if (canClose&&distToStart<=devConfig.ct) { closeTerritory(); return; }
 
   const hint=document.getElementById('close-hint');
-  if (canClose&&distToStart<=CLOSE_THRESHOLD*4) {
+  if (canClose&&distToStart<=devConfig.ct*4) {
     hint.style.display='block';
     if (startMarker) startMarker.setIcon(makeStartIcon(true));
   } else {
@@ -2527,16 +3023,21 @@ window.addEventListener('appinstalled', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════
-// 온보딩
+// 온보딩 (최초 로그인 후 username 설정)
 // ═══════════════════════════════════════════════════════════════
-function saveOnboardName() {
+async function saveOnboardName() {
   const input = document.getElementById('onboard-name');
   const name = input.value.trim();
   if (!name) { input.focus(); input.style.borderColor='var(--accent)'; return; }
+  // Firebase에 이름 저장
+  if (db && myPlayerId) {
+    await db.ref('users/' + myPlayerId + '/name').set(name);
+    await db.ref('users/' + myPlayerId + '/email').set(currentUser?.email || '');
+  }
   myPlayerName = name;
-  localStorage.setItem('rundom-pname', name);
   document.getElementById('onboarding').classList.add('hidden');
   updateAvatarInitial();
+  await initApp();
 }
 document.getElementById('onboard-name').addEventListener('keydown', e => {
   if (e.key === 'Enter') saveOnboardName();
@@ -2544,7 +3045,10 @@ document.getElementById('onboard-name').addEventListener('keydown', e => {
 
 function updateAvatarInitial() {
   const avatar = document.querySelector('.logo-avatar');
-  if (myPlayerName) {
+  if (!avatar) return;
+  if (currentUser?.photoURL) {
+    avatar.innerHTML = `<img src="${currentUser.photoURL}" style="width:100%;height:100%;border-radius:inherit;object-fit:cover" referrerpolicy="no-referrer">`;
+  } else if (myPlayerName) {
     avatar.innerHTML = `<span style="font-size:1rem;font-weight:800">${myPlayerName[0].toUpperCase()}</span>`;
   }
 }
@@ -2628,56 +3132,1093 @@ function showClaimCelebration(rec) {
 // ═══════════════════════════════════════════════════════════════
 // ── Language init ──
 currentLang = localStorage.getItem('rundom-lang') || 'en';
-// Apply i18n to static elements and mark active button
 document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
 document.querySelectorAll('.lang-btn').forEach(btn => { btn.classList.toggle('active', btn.dataset.lang === currentLang); });
 
-loadRecords();
-loadAchievements();
-drawAllRecords();
-updateBadgePill();
-updateHeaderStats();
-updateBottomBar();
-
-// 온보딩: 이름이 없으면 첫 실행 화면 표시
-if (!myPlayerName) {
-  document.getElementById('onboarding').classList.remove('hidden');
-} else {
-  document.getElementById('onboarding').classList.add('hidden');
-  updateAvatarInitial();
-}
-
-// Firebase 시작: 글로벌 영토 구독 + 기존 로컬 기록 동기화
+// Firebase 초기화 → onAuthStateChanged → handleAuthChange → initApp()
 if (FIREBASE_READY) {
   initFirebase();
-  // 기존 로컬 기록을 글로벌에 올림 (idempotent — 덮어써도 무방)
-  records.forEach(rec => pushToGlobal(rec));
-  // 다른 유저 영토 실시간 구독
-  subscribeGlobalTerritories();
-}
-
-// Auto-reconnect previous multiplayer room
-if (myRoomId && FIREBASE_READY) {
-  subscribeRoom(myRoomId);
-  updateRoomChip(myRoomId);
-}
-
-if (records.length>0) {
-  setStatus(t('statusLoaded', {n: records.length}));
-  const all=records.flatMap(r=>r.coords.map(c=>[c.lat,c.lng]));
-  if (all.length) map.fitBounds(L.latLngBounds(all),{padding:[40,40]});
 } else {
-  setStatus(t('statusStart'));
-  // 기록 없을 때 — 사용자 위치로 지도 중심 이동 (권한 있으면)
-  if ('geolocation' in navigator) {
-    navigator.geolocation.getCurrentPosition(
-      pos => map.setView([pos.coords.latitude, pos.coords.longitude], 15),
-      () => {},  // 거부 시 서울 fallback 유지
-      { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
-    );
+  // Firebase 미설정: 로그인 화면 표시 불가 → 오류 안내
+  showLoginScreen();
+}
+
+// ── 인증 후 앱 초기화 (handleAuthChange에서 호출) ──
+async function initApp() {
+  await loadRecords();
+  await loadAchievements();
+  drawAllRecords();
+  updateBadgePill();
+  updateHeaderStats();
+  updateBottomBar();
+
+  // 글로벌 영토 구독
+  records.forEach(rec => pushToGlobal(rec));
+  subscribeGlobalTerritories();
+
+  // Auto-reconnect previous multiplayer room
+  if (myRoomId) {
+    subscribeRoom(myRoomId);
+    updateRoomChip(myRoomId);
+  }
+
+  if (records.length > 0) {
+    setStatus(t('statusLoaded', {n: records.length}));
+    const all = records.flatMap(r => r.coords.map(c => [c.lat, c.lng]));
+    if (all.length) map.fitBounds(L.latLngBounds(all), {padding:[40,40]});
+  } else {
+    setStatus(t('statusStart'));
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        pos => map.setView([pos.coords.latitude, pos.coords.longitude], 15),
+        () => {},
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+      );
+    }
   }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 개발자 모드 (DEV PANEL)
+// ═══════════════════════════════════════════════════════════════
+const DEV_HASH_KEY    = 'rundom-dev-hash';
+const DEV_SESSION_KEY = 'rundom-dev-session';
+let devDrawMode    = false;
+let devDrawCoords  = [];
+let devDrawMarkers = [];
+let devDrawPoly    = null;
+let devDrawClick   = null;
+let devSimGps      = false;
+let devSimClick    = null;
+let devFakePlayers = {};
+let devTerritories = [];    // { id, rec, poly, ownerId, ownerName, color }
+let selectedTestRunner = null;
+let devIsDrawing = false;
+let devFreehandCoords = [];
+let devFreehandLine = null;
+let devOverlapViz = false;
+let devOverlapLayers = [];
+let devTapCount = 0, devTapTimer = null;
+
+// ═══════════════════════════════════════════════════════════════
+// 로그인 / 인증
+// ═══════════════════════════════════════════════════════════════
+let loginIsSignup = false;
+
+function showLoginScreen() {
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('onboarding').classList.add('hidden');
+}
+function hideLoginScreen() {
+  document.getElementById('login-screen').classList.add('hidden');
+}
+function loginSetError(msg) {
+  document.getElementById('login-error').textContent = msg;
+}
+function loginToggleMode() {
+  loginIsSignup = !loginIsSignup;
+  document.getElementById('login-submit-btn').textContent = loginIsSignup ? 'Create Account' : 'Sign In';
+  document.getElementById('login-toggle-text').textContent = loginIsSignup ? 'Already have an account?' : "Don't have an account?";
+  document.getElementById('login-toggle-link').textContent = loginIsSignup ? 'Sign In' : 'Sign Up';
+  document.getElementById('login-forgot-link').style.display = loginIsSignup ? 'none' : 'block';
+  loginSetError('');
+}
+async function loginWithGoogle() {
+  loginSetError('');
+  try {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    await auth.signInWithPopup(provider);
+  } catch(e) { loginSetError(e.message); }
+}
+async function loginWithEmailForm() {
+  const email = document.getElementById('login-email').value.trim();
+  const pwd   = document.getElementById('login-password').value;
+  if (!email || !pwd) { loginSetError('Please fill in all fields.'); return; }
+  const btn = document.getElementById('login-submit-btn');
+  btn.disabled = true;
+  loginSetError('');
+  try {
+    if (loginIsSignup) {
+      await auth.createUserWithEmailAndPassword(email, pwd);
+    } else {
+      await auth.signInWithEmailAndPassword(email, pwd);
+    }
+  } catch(e) {
+    loginSetError(e.message.replace('Firebase: ',''));
+    btn.disabled = false;
+  }
+}
+async function loginForgotPassword() {
+  const email = document.getElementById('login-email').value.trim();
+  if (!email) { loginSetError('Enter your email above first.'); return; }
+  try {
+    await auth.sendPasswordResetEmail(email);
+    loginSetError('✓ Reset email sent! Check your inbox.');
+  } catch(e) { loginSetError(e.message.replace('Firebase: ','')); }
+}
+// Enter key on password field submits
+document.getElementById('login-password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') loginWithEmailForm();
+});
+
+async function handleAuthChange(user) {
+  if (!user) {
+    // 로그아웃 상태
+    currentUser  = null;
+    myPlayerId   = null;
+    myPlayerName = '';
+    records      = [];
+    unlockedIds  = new Set();
+    showLoginScreen();
+    return;
+  }
+  currentUser = user;
+  myPlayerId  = user.uid;
+  hideLoginScreen();
+
+  // 이름 확인
+  const snap = await db.ref('users/' + user.uid + '/name').once('value');
+  const name  = snap.val();
+  if (name) {
+    myPlayerName = name;
+    document.getElementById('onboarding').classList.add('hidden');
+    updateAvatarInitial();
+    await initApp();
+  } else {
+    // 최초 로그인 → 이름 설정
+    document.getElementById('onboarding').classList.remove('hidden');
+    // Google 이름이 있으면 미리 채워주기
+    if (user.displayName) {
+      document.getElementById('onboard-name').value = user.displayName;
+    }
+  }
+}
+
+async function doSignOut() {
+  if (!confirm('Sign out?')) return;
+  // 룸 나가기
+  if (myRoomId) leaveRoom();
+  // 지도 레이어 초기화
+  Object.values(globalTerLayers).forEach(l => { try { map.removeLayer(l); } catch{} });
+  globalTerLayers = {};
+  Object.values(otherLayers).forEach(arr => arr.forEach(l => { try { map.removeLayer(l); } catch{} }));
+  otherLayers = {};
+  // 데이터 초기화
+  records = []; unlockedIds = new Set();
+  drawAllRecords();
+  updateBadgePill(); updateHeaderStats();
+  localStorage.removeItem('rundom-room');
+  myRoomId = null;
+  await auth.signOut(); // onAuthStateChanged → showLoginScreen()
+}
+
+// Settings 계정 정보 업데이트
+function updateSettingsAccountInfo() {
+  const el = document.getElementById('settings-account-info');
+  if (!el) return;
+  if (currentUser) {
+    el.innerHTML = `<strong>${myPlayerName || '—'}</strong><br><span style="font-size:0.78rem">${currentUser.email || 'Google account'}</span>`;
+  } else {
+    el.textContent = 'Not signed in';
+  }
+}
+
+const DEV_ALLOWED = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+
+// 로고 5번 탭 → 개발자 패널 열기 (localhost 전용)
+function devLogoTap() {
+  if (!DEV_ALLOWED) return;
+  devTapCount++;
+  clearTimeout(devTapTimer);
+  if (devTapCount >= 5) { devTapCount = 0; devOpenPanel(); return; }
+  devTapTimer = setTimeout(() => { devTapCount = 0; }, 3000);
+}
+// 데스크탑 단축키: Ctrl+Shift+Z (localhost 전용)
+document.addEventListener('keydown', e => {
+  if (DEV_ALLOWED && e.ctrlKey && e.shiftKey && e.key === 'Z') { e.preventDefault(); devOpenPanel(); }
+});
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function devOpenPanel() {
+  if (sessionStorage.getItem(DEV_SESSION_KEY) === '1') { devShowMain(); return; }
+  const hasHash = !!localStorage.getItem(DEV_HASH_KEY);
+  document.getElementById('dev-auth-sub').textContent =
+    hasHash ? 'Enter developer password' : '🔐 First time — set your developer password';
+  document.getElementById('dev-pwd-input').value = '';
+  document.getElementById('dev-panel').style.display = 'flex';
+  document.getElementById('dev-auth').classList.add('show');
+  document.getElementById('dev-main').classList.remove('show');
+  setTimeout(() => document.getElementById('dev-pwd-input').focus(), 80);
+}
+
+async function devAuthSubmit() {
+  const pwd = document.getElementById('dev-pwd-input').value;
+  if (!pwd || pwd.length < 4) { devLog('Password must be ≥ 4 characters', 'warn'); return; }
+  const hash = await sha256(pwd);
+  const stored = localStorage.getItem(DEV_HASH_KEY);
+  if (!stored) {
+    localStorage.setItem(DEV_HASH_KEY, hash);
+    sessionStorage.setItem(DEV_SESSION_KEY, '1');
+    devShowMain();
+    devLog('✓ Dev password set. Tap logo 7× to re-open.');
+  } else if (hash === stored) {
+    sessionStorage.setItem(DEV_SESSION_KEY, '1');
+    devShowMain();
+    devLog('✓ Dev mode unlocked');
+  } else {
+    document.getElementById('dev-pwd-input').value = '';
+    const inp = document.getElementById('dev-pwd-input');
+    inp.placeholder = '❌ Wrong password';
+    setTimeout(() => { inp.placeholder = 'Password...'; }, 1600);
+  }
+}
+
+function devShowMain() {
+  document.getElementById('dev-panel').style.display = 'flex';
+  document.getElementById('dev-auth').classList.remove('show');
+  document.getElementById('dev-main').classList.add('show');
+  document.getElementById('dev-fab').style.display = 'none';
+  devRefreshInfo();
+}
+
+function closeDevPanel() {
+  document.getElementById('dev-panel').style.display = 'none';
+  if (devSimGps) devToggleSimGps();
+  if (devDrawMode) devCancelDraw();
+  // Dev 모드: 로그인/온보딩 화면 숨기고 지도 보여주기
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('onboarding').classList.add('hidden');
+  // Show FAB so user can quickly reopen without re-tapping logo
+  if (sessionStorage.getItem(DEV_SESSION_KEY) === '1') {
+    document.getElementById('dev-fab').style.display = 'block';
+  }
+}
+
+function devTab(el, name) {
+  document.querySelectorAll('.dev-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.dev-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('dev-sec-' + name).classList.add('active');
+  el.classList.add('active');
+  if (name === 'info') devRefreshInfo();
+  if (name === 'notif') devRefreshNotifPerm();
+  if (name === 'territories') devRenderTerritories();
+}
+
+// ── GPS 시뮬레이션 ──
+function devToggleSimGps() {
+  devSimGps = !devSimGps;
+  const btn = document.getElementById('dev-gps-btn');
+  const dot = document.getElementById('dev-gps-dot');
+  if (devSimGps) {
+    btn.textContent = 'Disable'; btn.className = 'dev-btn dev-btn-danger';
+    dot.classList.add('on');
+    devSimClick = e => {
+      onPosition({ coords: { latitude: e.latlng.lat, longitude: e.latlng.lng, accuracy: 3 } });
+      devLog(`GPS → ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`);
+    };
+    map.on('click', devSimClick);
+    devShowHint('🛰 GPS Sim ON — tap map to set position');
+    devLog('GPS simulation enabled. Start a run, then tap the map.');
+  } else {
+    btn.textContent = 'Enable'; btn.className = 'dev-btn dev-btn-primary';
+    dot.classList.remove('on');
+    if (devSimClick) { map.off('click', devSimClick); devSimClick = null; }
+    devHideHint();
+    devLog('GPS simulation disabled');
+  }
+}
+
+// ── 영토 드로우 모드 ──
+function devToggleDrawMode() {
+  if (!devDrawMode) {
+    devDrawMode = true;
+    devDrawCoords = []; devDrawMarkers = []; devDrawPoly = null;
+    document.getElementById('dev-draw-btn').textContent = 'Drawing…';
+    document.getElementById('dev-draw-btn').className = 'dev-btn dev-btn-danger';
+    document.getElementById('dev-draw-dot').classList.add('on');
+    document.getElementById('dev-draw-controls').style.display = 'flex';
+    devDrawClick = e => {
+      const pt = { lat: e.latlng.lat, lng: e.latlng.lng, t: Date.now() };
+      devDrawCoords.push(pt);
+      const m = L.circleMarker([pt.lat, pt.lng],
+        { radius: 5, color: '#ff6b35', fillColor: '#ff6b35', fillOpacity: 1, weight: 2 }).addTo(map);
+      devDrawMarkers.push(m);
+      if (devDrawCoords.length >= 2) {
+        if (devDrawPoly) devDrawPoly.setLatLngs(devDrawCoords.map(c => [c.lat, c.lng]));
+        else devDrawPoly = L.polygon(devDrawCoords.map(c => [c.lat, c.lng]),
+          { color: '#ff6b35', fillColor: '#ff6b35', fillOpacity: 0.15, dashArray: '6 4', weight: 2 }).addTo(map);
+      }
+      devLog(`Point ${devDrawCoords.length}: ${pt.lat.toFixed(5)}, ${pt.lng.toFixed(5)}`);
+    };
+    map.on('click', devDrawClick);
+    devShowHint('✏️ Draw mode — tap map to place points');
+    devLog('Draw mode ON');
+  } else {
+    devCancelDraw();
+  }
+}
+
+function devCloseTerritoryDraw() {
+  if (devDrawCoords.length < 3) { devLog('Need at least 3 points', 'warn'); return; }
+  devDrawMarkers.forEach(m => map.removeLayer(m));
+  if (devDrawPoly) map.removeLayer(devDrawPoly);
+  if (devDrawClick) { map.off('click', devDrawClick); devDrawClick = null; }
+  devDrawMode = false;
+  document.getElementById('dev-draw-controls').style.display = 'none';
+  document.getElementById('dev-draw-btn').textContent = 'Start';
+  document.getElementById('dev-draw-btn').className = 'dev-btn dev-btn-blue';
+  document.getElementById('dev-draw-dot').classList.remove('on');
+  devHideHint();
+  const dist = devDrawCoords.reduce((s, c, i) => i === 0 ? 0 : s + haversine(devDrawCoords[i-1], c), 0);
+  const rec = {
+    id: Date.now().toString(), date: new Date().toISOString(),
+    coords: devDrawCoords, distance: dist,
+    area: calcArea(devDrawCoords), color: nextColor(), duration: 0,
+  };
+  records.push(rec); saveRecords(); drawRecord(rec);
+  checkAchievements(rec); updateHeaderStats();
+  if (FIREBASE_READY && db) { pushToGlobal(rec); if (myRoomId) pushTerritoryToRoom(rec); }
+  devLog(`✓ Territory saved: ${fmtArea(rec.area)}, ${(dist/1000).toFixed(2)} km`);
+  devDrawCoords = []; devDrawMarkers = []; devDrawPoly = null;
+}
+
+function devCancelDraw() {
+  devDrawMode = false;
+  devDrawMarkers.forEach(m => map.removeLayer(m));
+  devDrawMarkers = [];
+  if (devDrawPoly) { map.removeLayer(devDrawPoly); devDrawPoly = null; }
+  if (devDrawClick) { map.off('click', devDrawClick); devDrawClick = null; }
+  devDrawCoords = [];
+  document.getElementById('dev-draw-controls').style.display = 'none';
+  document.getElementById('dev-draw-btn').textContent = 'Start';
+  document.getElementById('dev-draw-btn').className = 'dev-btn dev-btn-blue';
+  document.getElementById('dev-draw-dot').classList.remove('on');
+  devHideHint();
+  devLog('Draw cancelled');
+}
+
+function devClearPath() {
+  coords = []; totalDistance = 0;
+  if (typeof lastPositions !== 'undefined') lastPositions = [];
+  if (typeof polyline !== 'undefined' && polyline) { map.removeLayer(polyline); polyline = null; }
+  if (typeof startMarker !== 'undefined' && startMarker) { map.removeLayer(startMarker); startMarker = null; }
+  devLog('Active path cleared');
+}
+
+// ── 가짜 플레이어 ──
+function devAddFakePlayer() {
+  const name  = document.getElementById('dev-fake-name').value.trim() || `Bot${Math.floor(Math.random()*99)}`;
+  const color = document.getElementById('dev-fake-color').value;
+  const pid = 'dev_' + Math.random().toString(36).slice(2, 8);
+  const c = map.getCenter();
+  const lat = c.lat + (Math.random() - 0.5) * 0.004;
+  const lng = c.lng + (Math.random() - 0.5) * 0.004;
+
+  // 지도에 로컬 마커 추가 (룸 없어도 동작)
+  const iconHtml = `<div style="position:relative;width:32px;height:32px;">
+    <div class="other-player-dot" style="background:${color};color:#000;">
+      <div class="other-player-pulse" style="color:${color};border-color:${color}"></div>
+      ${name[0].toUpperCase()}
+    </div></div>`;
+  const icon = L.divIcon({ html: iconHtml, className:'', iconSize:[32,32], iconAnchor:[16,16] });
+  const marker = L.marker([lat, lng], { icon, zIndexOffset: 500, draggable: true })
+    .addTo(map)
+    .bindTooltip(name, { permanent: false, direction: 'top', className: 'leaflet-tooltip-dark' });
+
+  // 클릭 → runner 선택
+  marker.on('click', function(e) {
+    L.DomEvent.stopPropagation(e);
+    devSelectRunner(pid);
+  });
+
+  // 드래그로 fake player 이동
+  marker.on('dragend', function(e) {
+    const pos = e.target.getLatLng();
+    devFakePlayers[pid].lat = pos.lat;
+    devFakePlayers[pid].lng = pos.lng;
+    if (myRoomId && db) {
+      db.ref(`rooms/${myRoomId}/positions/${pid}`).update({ lat: pos.lat, lng: pos.lng, ts: Date.now() });
+    }
+    devLog(`Moved "${name}" → ${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}`);
+  });
+
+  // 룸 있으면 Firebase에도 동기화
+  if (myRoomId && db) {
+    db.ref(`rooms/${myRoomId}/positions/${pid}`).set({ lat, lng, name, color, ts: Date.now() });
+    db.ref(`rooms/${myRoomId}/players/${pid}`).set({ name, color, joinedAt: Date.now() });
+  }
+
+  devFakePlayers[pid] = { pid, name, color, marker, lat, lng };
+  devLog(`Added fake player "${name}" ${myRoomId ? '(room + map)' : '(map only — no room)'}`);
+  devRenderPlayers();
+  document.getElementById('dev-fake-name').value = '';
+}
+
+function devRenderPlayers() {
+  const list = document.getElementById('dev-players-list');
+  const entries = Object.values(devFakePlayers);
+  list.innerHTML = entries.length ? entries.map(p => {
+    const sel = selectedTestRunner === p.pid;
+    return `
+    <div class="dev-player-card" style="cursor:pointer;${sel?'border:1px solid var(--accent);background:rgba(255,228,77,0.08)':''}"
+      onclick="devSelectRunner('${p.pid}');closeDevPanel();">
+      <div class="dev-player-dot" style="background:${p.color};color:#000">${p.name[0].toUpperCase()}</div>
+      <div style="flex:1">
+        <div class="dev-player-name">${p.name} ${sel?'<span style="color:var(--accent);font-size:0.7rem">● SELECTED</span>':''}</div>
+        <div class="dev-player-pos">${devTerritories.filter(dt=>dt.ownerId===p.pid).length} zones · click to select & draw</div>
+      </div>
+      <button class="dev-btn dev-btn-danger" onclick="event.stopPropagation();devRemoveFakePlayer('${p.pid}')"
+        style="padding:5px 10px;font-size:0.75rem">✕</button>
+    </div>`;
+  }).join('')
+    : '<div style="color:#8b949e;font-size:0.78rem;padding:8px 0">No fake players added yet.</div>';
+}
+
+function devRemoveFakePlayer(pid) {
+  if (myRoomId && db) {
+    db.ref(`rooms/${myRoomId}/positions/${pid}`).remove();
+    db.ref(`rooms/${myRoomId}/players/${pid}`).remove();
+  }
+  if (devFakePlayers[pid]?.marker) map.removeLayer(devFakePlayers[pid].marker);
+  // 해당 runner의 영토도 제거
+  devTerritories = devTerritories.filter(dt => {
+    if (dt.ownerId === pid) { map.removeLayer(dt.poly); return false; }
+    return true;
+  });
+  if (selectedTestRunner === pid) devDeselectRunner();
+  delete devFakePlayers[pid];
+  devLog(`Removed fake player ${pid}`);
+  devRenderPlayers();
+  devRenderTerritories();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Test Runner 선택 + 프리핸드 영토 그리기
+// ═══════════════════════════════════════════════════════════════
+function devSelectRunner(pid) {
+  if (selectedTestRunner === pid) { devDeselectRunner(); return; }
+  devDeselectRunner(); // 이전 선택 해제
+  selectedTestRunner = pid;
+  const runner = devFakePlayers[pid];
+  if (!runner) return;
+
+  // 마커에 선택 표시
+  const el = runner.marker.getElement();
+  if (el) el.classList.add('dev-marker-selected');
+
+  // HUD 표시
+  const hud = document.getElementById('dev-runner-hud');
+  document.getElementById('dev-hud-dot').style.background = runner.color;
+  document.getElementById('dev-hud-name').textContent = runner.name;
+  hud.style.display = 'flex';
+
+  // 프리핸드 그리기 이벤트 바인딩
+  map.dragging.disable(); // 지도 패닝 비활성 → 드래그가 그리기로 작동
+  map.on('mousedown', devFreehandStart);
+  map.on('touchstart', devFreehandTouchStart);
+
+  devLog(`Selected "${runner.name}" — drag on map to draw territory`);
+}
+
+function devDeselectRunner() {
+  if (!selectedTestRunner) return;
+  const runner = devFakePlayers[selectedTestRunner];
+  if (runner) {
+    const el = runner.marker.getElement();
+    if (el) el.classList.remove('dev-marker-selected');
+  }
+  selectedTestRunner = null;
+  document.getElementById('dev-runner-hud').style.display = 'none';
+
+  // 이벤트 해제
+  map.dragging.enable();
+  map.off('mousedown', devFreehandStart);
+  map.off('mousemove', devFreehandMove);
+  map.off('mouseup', devFreehandEnd);
+  map.off('touchstart', devFreehandTouchStart);
+  map.off('touchmove', devFreehandTouchMove);
+  map.off('touchend', devFreehandEnd);
+
+  // 진행 중 그리기 취소
+  if (devFreehandLine) { map.removeLayer(devFreehandLine); devFreehandLine = null; }
+  devFreehandCoords = [];
+  devIsDrawing = false;
+}
+
+// ESC 키로 선택 해제
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && selectedTestRunner) { devDeselectRunner(); }
+});
+
+// ── 프리핸드 드래그 ──
+function devFreehandStart(e) {
+  if (!selectedTestRunner) return;
+  devIsDrawing = true;
+  devFreehandCoords = [{ lat: e.latlng.lat, lng: e.latlng.lng, t: Date.now() }];
+  devFreehandLine = L.polyline([], { color: devFakePlayers[selectedTestRunner].color, weight: 3, dashArray: '6 4' }).addTo(map);
+  map.on('mousemove', devFreehandMove);
+  map.on('mouseup', devFreehandEnd);
+}
+
+function devFreehandTouchStart(e) {
+  if (!selectedTestRunner || !e.originalEvent.touches.length) return;
+  const touch = e.originalEvent.touches[0];
+  const latlng = map.containerPointToLatLng(L.point(touch.clientX, touch.clientY));
+  devIsDrawing = true;
+  devFreehandCoords = [{ lat: latlng.lat, lng: latlng.lng, t: Date.now() }];
+  devFreehandLine = L.polyline([], { color: devFakePlayers[selectedTestRunner].color, weight: 3, dashArray: '6 4' }).addTo(map);
+  map.on('touchmove', devFreehandTouchMove);
+  map.on('touchend', devFreehandEnd);
+  e.originalEvent.preventDefault();
+}
+
+function devFreehandMove(e) {
+  if (!devIsDrawing) return;
+  const pt = { lat: e.latlng.lat, lng: e.latlng.lng, t: Date.now() };
+  // 포인트 간격 필터 (2m 이상만)
+  const last = devFreehandCoords[devFreehandCoords.length - 1];
+  if (haversine(last, pt) < 2) return;
+  devFreehandCoords.push(pt);
+  devFreehandLine.setLatLngs(devFreehandCoords.map(c => [c.lat, c.lng]));
+}
+
+function devFreehandTouchMove(e) {
+  if (!devIsDrawing || !e.originalEvent.touches.length) return;
+  const touch = e.originalEvent.touches[0];
+  const latlng = map.containerPointToLatLng(L.point(touch.clientX, touch.clientY));
+  const pt = { lat: latlng.lat, lng: latlng.lng, t: Date.now() };
+  const last = devFreehandCoords[devFreehandCoords.length - 1];
+  if (haversine(last, pt) < 2) return;
+  devFreehandCoords.push(pt);
+  devFreehandLine.setLatLngs(devFreehandCoords.map(c => [c.lat, c.lng]));
+  e.originalEvent.preventDefault();
+}
+
+function devFreehandEnd() {
+  if (!devIsDrawing) return;
+  devIsDrawing = false;
+  map.off('mousemove', devFreehandMove);
+  map.off('mouseup', devFreehandEnd);
+  map.off('touchmove', devFreehandTouchMove);
+  map.off('touchend', devFreehandEnd);
+
+  // 그리기 라인 제거
+  if (devFreehandLine) { map.removeLayer(devFreehandLine); devFreehandLine = null; }
+
+  // 최소 5포인트 필요
+  if (devFreehandCoords.length < 5) {
+    devLog('Too few points — drag more to draw a territory', 'warn');
+    devFreehandCoords = [];
+    return;
+  }
+
+  const runner = devFakePlayers[selectedTestRunner];
+  if (!runner) { devFreehandCoords = []; return; }
+
+  // 포인트 간소화 (너무 많으면 줄이기)
+  let pts = devFreehandCoords;
+  if (pts.length > 100) {
+    const step = Math.ceil(pts.length / 80);
+    pts = pts.filter((_, i) => i % step === 0);
+  }
+
+  // 영토 레코드 생성
+  const dist = pts.reduce((s, c, i) => i === 0 ? 0 : s + haversine(pts[i-1], c), 0);
+  const rec = {
+    id: 'dev_' + Date.now().toString(),
+    date: new Date().toISOString(),
+    coords: pts,
+    distance: dist,
+    area: calcArea(pts),
+    color: runner.color,
+    duration: 0,
+    owner: runner.name,
+    ownerId: runner.pid,
+    isDev: true,
+  };
+
+  // 폴리곤 그리기
+  const poly = L.polygon(pts.map(c => [c.lat, c.lng]), {
+    color: runner.color, weight: 3, fillColor: runner.color, fillOpacity: 0.35,
+  }).addTo(map);
+
+  const dtEntry = { id: rec.id, rec, poly, ownerId: runner.pid, ownerName: runner.name, color: runner.color };
+  devTerritories.push(dtEntry);
+
+  devLog(`✓ ${runner.name}'s territory: ${fmtArea(rec.area)}, ${(dist/1000).toFixed(2)} km`);
+
+  // 영토 정복: 기존 다른 runner 영토 클리핑
+  applyConquest(rec, runner.pid, devTerritories, 'dev');
+
+  devRenderTerritories();
+  devFreehandCoords = [];
+}
+
+// ── 겹침 감지 ──
+function devCheckOverlaps(newEntry) {
+  const newCoords = newEntry.rec.coords;
+  for (const dt of devTerritories) {
+    if (dt.id === newEntry.id) continue;
+    if (dt.ownerId === newEntry.ownerId) continue; // 같은 runner 영토끼리는 무시
+
+    const otherCoords = dt.rec.coords;
+    if (polygonsOverlap(newCoords, otherCoords)) {
+      // 겹침! → attack blink
+      triggerAttackBlink(dt.poly, dt.color);
+      triggerAttackBlink(newEntry.poly, newEntry.color);
+      devLog(`⚔️ OVERLAP: "${newEntry.ownerName}" ↔ "${dt.ownerName}"`, 'warn');
+      showGameNotification('notifAttackTitle', 'notifAttackBody', { name: newEntry.ownerName });
+    } else {
+      // 근접 확인 (1km)
+      const c1 = polyCentroid(newCoords);
+      const c2 = polyCentroid(otherCoords);
+      const distM = haversine(c1, c2);
+      if (distM < 1000) {
+        devLog(`📍 NEARBY (${Math.round(distM)}m): "${newEntry.ownerName}" ↔ "${dt.ownerName}"`);
+        showGameNotification('notifNearTerTitle', 'notifNearTerBody', { name: dt.ownerName });
+      }
+    }
+  }
+}
+
+// ── Dev 영토 리스트 렌더링 ──
+function devRenderTerritories() {
+  const list = document.getElementById('dev-territories-list');
+  const count = document.getElementById('dev-ter-count');
+  if (!list) return;
+  count.textContent = `${devTerritories.length} territories`;
+  list.innerHTML = devTerritories.length ? devTerritories.map(dt => `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #21262d">
+      <div style="width:12px;height:12px;border-radius:50%;background:${dt.color};flex-shrink:0"></div>
+      <div style="flex:1;font-size:0.78rem">
+        <span style="color:#e6edf3;font-weight:600">${dt.ownerName}</span>
+        <span style="color:#8b949e"> · ${fmtArea(dt.rec.area)}</span>
+      </div>
+      <button class="dev-btn dev-btn-danger" onclick="devDeleteTerritory('${dt.id}')"
+        style="padding:3px 8px;font-size:0.7rem">✕</button>
+    </div>`).join('')
+    : '<div style="color:#8b949e;font-size:0.78rem;padding:8px 0">No dev territories. Select a runner and drag on map.</div>';
+}
+
+function devDeleteTerritory(id) {
+  const idx = devTerritories.findIndex(dt => dt.id === id);
+  if (idx >= 0) {
+    map.removeLayer(devTerritories[idx].poly);
+    devTerritories.splice(idx, 1);
+    devLog(`Deleted dev territory ${id}`);
+    devRenderTerritories();
+  }
+}
+
+function devClearAllTerritories() {
+  devTerritories.forEach(dt => map.removeLayer(dt.poly));
+  devTerritories = [];
+  devClearOverlapViz();
+  devLog('Cleared all dev territories');
+  devRenderTerritories();
+}
+
+// ── Overlap Visualizer ──
+function devToggleOverlapViz() {
+  devOverlapViz = !devOverlapViz;
+  const btn = document.getElementById('dev-overlap-btn');
+  if (devOverlapViz) {
+    btn.className = 'dev-btn dev-btn-danger';
+    btn.textContent = 'Hide';
+    devRunOverlapViz();
+  } else {
+    btn.className = 'dev-btn dev-btn-blue';
+    btn.textContent = 'Overlaps';
+    devClearOverlapViz();
+  }
+}
+
+function devRunOverlapViz() {
+  devClearOverlapViz();
+  let overlapsFound = 0;
+  for (let i = 0; i < devTerritories.length; i++) {
+    for (let j = i + 1; j < devTerritories.length; j++) {
+      const a = devTerritories[i], b = devTerritories[j];
+      if (a.ownerId === b.ownerId) continue;
+      if (polygonsOverlap(a.rec.coords, b.rec.coords)) {
+        // 겹치는 영토 → 빨간 하이라이트
+        a.poly.setStyle({ color: '#ff2040', weight: 4 });
+        b.poly.setStyle({ color: '#ff2040', weight: 4 });
+        overlapsFound++;
+        devLog(`⚔️ ${a.ownerName} ↔ ${b.ownerName}: OVERLAP`);
+      } else {
+        const c1 = polyCentroid(a.rec.coords);
+        const c2 = polyCentroid(b.rec.coords);
+        const distM = haversine(c1, c2);
+        if (distM < 1000) {
+          a.poly.setStyle({ color: '#fb923c', weight: 3 });
+          b.poly.setStyle({ color: '#fb923c', weight: 3 });
+          devLog(`📍 ${a.ownerName} ↔ ${b.ownerName}: NEARBY (${Math.round(distM)}m)`);
+        }
+      }
+    }
+  }
+  if (!overlapsFound) devLog('No overlaps found');
+}
+
+function devClearOverlapViz() {
+  // 원래 색상 복원
+  devTerritories.forEach(dt => {
+    dt.poly.setStyle({ color: dt.color, fillColor: dt.color, weight: 3 });
+  });
+  devOverlapLayers.forEach(l => { try { map.removeLayer(l); } catch{} });
+  devOverlapLayers = [];
+}
+
+// ── 알림 테스트 ──
+function devRefreshNotifPerm() {
+  document.getElementById('dev-notif-perm').textContent =
+    ('Notification' in window) ? Notification.permission : 'Not supported';
+}
+function devRequestPerm() {
+  requestNotifPermission().then(() => devRefreshNotifPerm());
+}
+function devTestNotif(type) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') {
+    devLog('Grant notification permission first', 'warn'); return;
+  }
+  const map_ = {
+    attack:    ['notifAttackTitle',    'notifAttackBody',    { name: 'DevBot' }],
+    player:    ['notifNearPlayerTitle','notifNearPlayerBody',{ name: 'TestRunner' }],
+    territory: ['notifNearTerTitle',   'notifNearTerBody',   { name: 'TestRunner', area: '4,200' }],
+  };
+  const [tk, bk, vars] = map_[type];
+  showGameNotification(tk, bk, vars);
+  devLog(`Fired: ${type} notification`);
+}
+function devTestBlink() {
+  const ids = Object.keys(polyLayers);
+  if (!ids.length) { devLog('No territories to blink', 'warn'); return; }
+  ids.forEach(id => { const r = records.find(x => x.id === id); if (r) triggerAttackBlink(polyLayers[id], r.color); });
+  devLog(`Blink triggered on ${ids.length} territories`);
+}
+
+// ── 게임 튜닝 ──
+function devToggleFastMode() {
+  const fast = document.getElementById('dev-fast-btn').textContent === 'Enable';
+  const vals = fast ? { ct: 3, md: 5, pf: 1 } : { ct: CLOSE_THRESHOLD, md: MIN_DIST_TO_CLOSE, pf: POINT_FILTER };
+  devConfig.ct = vals.ct; devConfig.md = vals.md; devConfig.pf = vals.pf;
+  document.getElementById('dev-ct').value = vals.ct;
+  document.getElementById('dev-md').value = vals.md;
+  document.getElementById('dev-pf').value = vals.pf;
+  document.getElementById('dev-ct-val').textContent = vals.ct + 'm';
+  document.getElementById('dev-md-val').textContent = vals.md + 'm';
+  document.getElementById('dev-pf-val').textContent = vals.pf + 'm';
+  const on = fast;
+  document.getElementById('dev-fast-btn').textContent = on ? 'Disable' : 'Enable';
+  document.getElementById('dev-fast-btn').className = on ? 'dev-btn dev-btn-danger' : 'dev-btn dev-btn-primary';
+  document.getElementById('dev-fast-dot').classList.toggle('on', on);
+  devLog(on ? 'Fast mode ON (ct=3m, md=5m, pf=1m)' : 'Fast mode OFF — defaults restored');
+}
+function devSetThreshold(key, val) {
+  devConfig[key] = val;
+  document.getElementById(`dev-${key}-val`).textContent = val + 'm';
+  devLog(`${key} = ${val}m`);
+}
+function devResetThresholds() {
+  devConfig.ct = CLOSE_THRESHOLD; devConfig.md = MIN_DIST_TO_CLOSE; devConfig.pf = POINT_FILTER;
+  document.getElementById('dev-ct').value = CLOSE_THRESHOLD;
+  document.getElementById('dev-md').value = MIN_DIST_TO_CLOSE;
+  document.getElementById('dev-pf').value = POINT_FILTER;
+  document.getElementById('dev-ct-val').textContent = CLOSE_THRESHOLD + 'm';
+  document.getElementById('dev-md-val').textContent = MIN_DIST_TO_CLOSE + 'm';
+  document.getElementById('dev-pf-val').textContent = POINT_FILTER + 'm';
+  document.getElementById('dev-fast-btn').textContent = 'Enable';
+  document.getElementById('dev-fast-btn').className = 'dev-btn dev-btn-primary';
+  document.getElementById('dev-fast-dot').classList.remove('on');
+  devLog('Thresholds reset to defaults');
+}
+
+// ── 정보 ──
+function devRefreshInfo() {
+  document.getElementById('dev-fb-status').innerHTML =
+    FIREBASE_READY && db ? '<span style="color:#3fb950">● Connected</span>' : '<span style="color:#8b949e">● Not connected</span>';
+  document.getElementById('dev-pid').textContent = myPlayerId || '—';
+  document.getElementById('dev-room-info').textContent = myRoomId || '—';
+  document.getElementById('dev-rec-count').textContent = records.length + ' territories';
+  document.getElementById('dev-gps-info').textContent =
+    myLastLatLng ? `${myLastLatLng.lat.toFixed(5)}, ${myLastLatLng.lng.toFixed(5)}` : 'No fix yet';
+  document.getElementById('dev-lang-info').textContent = currentLang;
+}
+function devDeleteLastTer() {
+  if (!records.length) { devLog('No records', 'warn'); return; }
+  const last = records[records.length - 1];
+  if (polyLayers[last.id]) { map.removeLayer(polyLayers[last.id]); delete polyLayers[last.id]; }
+  records.pop(); saveRecords(); updateHeaderStats();
+  devLog(`Deleted territory ${last.id}`);
+  devRefreshInfo();
+}
+function devResetPassword() {
+  if (!confirm('Reset dev password? You must set a new one next time.')) return;
+  localStorage.removeItem(DEV_HASH_KEY);
+  sessionStorage.removeItem(DEV_SESSION_KEY);
+  closeDevPanel();
+  devLog('Dev password reset');
+}
+
+// ── 공통 유틸 ──
+function devLog(msg, type = 'ok') {
+  const log = document.getElementById('dev-log');
+  if (!log) return;
+  const ts = new Date().toTimeString().slice(0, 8);
+  const cls = type === 'err' ? 'dev-log-err' : type === 'warn' ? 'dev-log-warn' : '';
+  log.innerHTML += `<span class="${cls}">[${ts}] ${msg}\n</span>`;
+  log.scrollTop = log.scrollHeight;
+}
+function devShowHint(msg) {
+  const h = document.getElementById('dev-hint');
+  h.textContent = msg; h.style.display = 'block';
+}
+function devHideHint() {
+  document.getElementById('dev-hint').style.display = 'none';
+}
+
 </script>
+
+<!-- ════ DEV RUNNER SELECT HUD ════ -->
+<div id="dev-runner-hud">
+  <span class="runner-dot" id="dev-hud-dot"></span>
+  <span class="hud-name" id="dev-hud-name"></span>
+  <span class="hud-hint">drag map to draw territory · ESC to deselect</span>
+</div>
+
+<!-- ════ DEV PANEL ════ -->
+<div id="dev-panel">
+  <div id="dev-auth">
+    <div class="dev-auth-title">🛠 Dev Mode</div>
+    <div class="dev-auth-sub" id="dev-auth-sub">Enter developer password</div>
+    <input class="dev-input" id="dev-pwd-input" type="password" placeholder="Password..."
+      onkeydown="if(event.key==='Enter')devAuthSubmit()">
+    <button class="dev-btn dev-btn-primary" onclick="devAuthSubmit()" style="width:100%;max-width:300px">Unlock</button>
+    <button class="dev-btn dev-btn-ghost" onclick="closeDevPanel()" style="width:100%;max-width:300px">Cancel</button>
+  </div>
+  <div id="dev-main">
+    <div class="dev-header">
+      <span class="dev-badge">DEV</span>
+      <span class="dev-title">Rundom Dev Tools</span>
+      <button class="dev-btn dev-btn-blue" onclick="closeDevPanel()" style="padding:6px 12px;font-size:0.75rem">← Map</button>
+      <button class="dev-close" onclick="closeDevPanel()">✕</button>
+    </div>
+    <div class="dev-tabs">
+      <button class="dev-tab active" onclick="devTab(this,'gps')">🛰 GPS</button>
+      <button class="dev-tab" onclick="devTab(this,'players')">👥 Players</button>
+      <button class="dev-tab" onclick="devTab(this,'territories')">🗺 Zones</button>
+      <button class="dev-tab" onclick="devTab(this,'notif')">🔔 Notifs</button>
+      <button class="dev-tab" onclick="devTab(this,'tuning')">⚙️ Tuning</button>
+      <button class="dev-tab" onclick="devTab(this,'info')">📋 Info</button>
+    </div>
+    <div class="dev-content">
+
+      <!-- GPS -->
+      <div class="dev-section active" id="dev-sec-gps">
+        <div class="dev-row">
+          <div>
+            <div class="dev-row-label">🖱 Map Click GPS</div>
+            <div class="dev-row-sub">Tap map → simulates GPS position during a run</div>
+          </div>
+          <div class="dev-row-right">
+            <span class="status-dot" id="dev-gps-dot"></span>
+            <button class="dev-btn dev-btn-primary" id="dev-gps-btn" onclick="devToggleSimGps()">Enable</button>
+          </div>
+        </div>
+        <div class="dev-row">
+          <div>
+            <div class="dev-row-label">✏️ Draw Territory</div>
+            <div class="dev-row-sub">Click map to place polygon points, then close</div>
+          </div>
+          <div class="dev-row-right">
+            <span class="status-dot" id="dev-draw-dot"></span>
+            <button class="dev-btn dev-btn-blue" id="dev-draw-btn" onclick="devToggleDrawMode()">Start</button>
+          </div>
+        </div>
+        <div id="dev-draw-controls" style="display:none;gap:6px;flex-direction:column;padding-bottom:8px">
+          <button class="dev-btn dev-btn-primary" onclick="devCloseTerritoryDraw()" style="width:100%">✅ Close & Save Territory</button>
+          <button class="dev-btn dev-btn-ghost" onclick="devCancelDraw()" style="width:100%">✕ Cancel</button>
+        </div>
+        <div class="dev-row">
+          <div>
+            <div class="dev-row-label">🗑 Clear Active Path</div>
+            <div class="dev-row-sub">Wipe current run path without saving</div>
+          </div>
+          <button class="dev-btn dev-btn-danger" onclick="devClearPath()">Clear</button>
+        </div>
+      </div>
+
+      <!-- Players -->
+      <div class="dev-section" id="dev-sec-players">
+        <div class="dev-row" style="flex-direction:column;align-items:stretch;gap:8px;border-bottom:1px solid #21262d;padding-bottom:14px">
+          <div class="dev-row-label">➕ Add Fake Player to Room</div>
+          <div style="display:flex;gap:8px">
+            <input class="dev-input" id="dev-fake-name" placeholder="Player name" style="flex:1">
+            <input type="color" id="dev-fake-color" value="#5BB4D8"
+              style="width:40px;height:40px;border:1px solid #30363d;border-radius:6px;cursor:pointer;background:#161b22;padding:2px">
+          </div>
+          <button class="dev-btn dev-btn-blue" onclick="devAddFakePlayer()" style="width:100%">Add Player to Map</button>
+          <div style="color:#8b949e;font-size:0.7rem">Adds marker on map. Also syncs to room if joined.</div>
+        </div>
+        <div id="dev-players-list" style="margin-top:10px"></div>
+      </div>
+
+      <!-- Dev Territories -->
+      <div class="dev-section" id="dev-sec-territories">
+        <div class="dev-row" style="border-bottom:1px solid #21262d;padding-bottom:10px">
+          <div>
+            <div class="dev-row-label">🗺 Runner Territories</div>
+            <div class="dev-row-sub" id="dev-ter-count">0 territories</div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="dev-btn dev-btn-blue" id="dev-overlap-btn" onclick="devToggleOverlapViz()">Overlaps</button>
+            <button class="dev-btn dev-btn-danger" onclick="devClearAllTerritories()">Clear All</button>
+          </div>
+        </div>
+        <div id="dev-territories-list" style="margin-top:10px;max-height:200px;overflow-y:auto"></div>
+      </div>
+
+      <!-- Notifications -->
+      <div class="dev-section" id="dev-sec-notif">
+        <div class="dev-row">
+          <div>
+            <div class="dev-row-label">Permission</div>
+            <div class="dev-row-sub" id="dev-notif-perm">—</div>
+          </div>
+          <button class="dev-btn dev-btn-blue" onclick="devRequestPerm()">Request</button>
+        </div>
+        <div class="dev-row">
+          <div>
+            <div class="dev-row-label">⚔️ Attack Notification</div>
+            <div class="dev-row-sub">Fire territory-under-attack alert</div>
+          </div>
+          <button class="dev-btn dev-btn-danger" onclick="devTestNotif('attack')">Fire</button>
+        </div>
+        <div class="dev-row">
+          <div>
+            <div class="dev-row-label">👟 Nearby Player</div>
+            <div class="dev-row-sub">Fire nearby runner alert</div>
+          </div>
+          <button class="dev-btn dev-btn-warn" onclick="devTestNotif('player')">Fire</button>
+        </div>
+        <div class="dev-row">
+          <div>
+            <div class="dev-row-label">🏴 Nearby Territory</div>
+            <div class="dev-row-sub">Fire territory claimed nearby alert</div>
+          </div>
+          <button class="dev-btn dev-btn-warn" onclick="devTestNotif('territory')">Fire</button>
+        </div>
+        <div class="dev-row">
+          <div>
+            <div class="dev-row-label">🔴 Attack Blink</div>
+            <div class="dev-row-sub">Flash all your territories red</div>
+          </div>
+          <button class="dev-btn dev-btn-danger" onclick="devTestBlink()">Trigger</button>
+        </div>
+      </div>
+
+      <!-- Tuning -->
+      <div class="dev-section" id="dev-sec-tuning">
+        <div class="dev-row">
+          <div>
+            <div class="dev-row-label">⚡ Fast Mode</div>
+            <div class="dev-row-sub">Min distance 5m, close threshold 3m</div>
+          </div>
+          <div class="dev-row-right">
+            <span class="status-dot" id="dev-fast-dot"></span>
+            <button class="dev-btn dev-btn-primary" id="dev-fast-btn" onclick="devToggleFastMode()">Enable</button>
+          </div>
+        </div>
+        <div class="dev-row" style="flex-direction:column;align-items:stretch;gap:6px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="dev-row-label">Close Threshold</div>
+            <span class="dev-val" id="dev-ct-val">25m</span>
+          </div>
+          <input type="range" class="dev-slider" id="dev-ct" min="3" max="100" value="25"
+            oninput="devSetThreshold('ct',+this.value)">
+        </div>
+        <div class="dev-row" style="flex-direction:column;align-items:stretch;gap:6px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="dev-row-label">Min Distance to Close</div>
+            <span class="dev-val" id="dev-md-val">150m</span>
+          </div>
+          <input type="range" class="dev-slider" id="dev-md" min="5" max="500" value="150"
+            oninput="devSetThreshold('md',+this.value)">
+        </div>
+        <div class="dev-row" style="flex-direction:column;align-items:stretch;gap:6px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="dev-row-label">Point Filter</div>
+            <span class="dev-val" id="dev-pf-val">3m</span>
+          </div>
+          <input type="range" class="dev-slider" id="dev-pf" min="1" max="20" value="3"
+            oninput="devSetThreshold('pf',+this.value)">
+        </div>
+        <div class="dev-row">
+          <div class="dev-row-label">Reset to Defaults</div>
+          <button class="dev-btn dev-btn-ghost" onclick="devResetThresholds()">Reset</button>
+        </div>
+      </div>
+
+      <!-- Info -->
+      <div class="dev-section" id="dev-sec-info">
+        <div class="dev-row">
+          <div class="dev-row-label">Firebase</div>
+          <span id="dev-fb-status" style="font-size:0.8rem"></span>
+        </div>
+        <div class="dev-row">
+          <div class="dev-row-label">Player ID</div>
+          <span id="dev-pid" style="color:#58a6ff;font-size:0.65rem;font-family:monospace;word-break:break-all;max-width:55%"></span>
+        </div>
+        <div class="dev-row">
+          <div class="dev-row-label">Room</div>
+          <span id="dev-room-info" style="color:#3fb950;font-family:monospace;font-size:0.8rem"></span>
+        </div>
+        <div class="dev-row">
+          <div class="dev-row-label">Territories</div>
+          <span id="dev-rec-count" style="color:#3fb950;font-family:monospace;font-size:0.8rem"></span>
+        </div>
+        <div class="dev-row">
+          <div class="dev-row-label">Last GPS</div>
+          <span id="dev-gps-info" style="color:#8b949e;font-family:monospace;font-size:0.72rem"></span>
+        </div>
+        <div class="dev-row">
+          <div class="dev-row-label">Language</div>
+          <span id="dev-lang-info" style="color:#58a6ff;font-family:monospace;font-size:0.8rem"></span>
+        </div>
+        <div class="dev-row">
+          <div>
+            <div class="dev-row-label">Delete Last Territory</div>
+            <div class="dev-row-sub">Removes most recent record from map + storage</div>
+          </div>
+          <button class="dev-btn dev-btn-danger" onclick="devDeleteLastTer()">Delete</button>
+        </div>
+        <div class="dev-row">
+          <div>
+            <div class="dev-row-label">Reset Dev Password</div>
+            <div class="dev-row-sub">Clears saved hash — next open will prompt setup</div>
+          </div>
+          <button class="dev-btn dev-btn-warn" onclick="devResetPassword()">Reset</button>
+        </div>
+        <div style="margin-top:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div class="dev-row-label">Log</div>
+            <button class="dev-btn dev-btn-ghost" onclick="document.getElementById('dev-log').innerHTML=''"
+              style="padding:3px 10px;font-size:0.7rem">Clear</button>
+          </div>
+          <div class="dev-log" id="dev-log"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<div id="dev-hint"></div>
+<button id="dev-fab" onclick="devOpenPanel()">⚙ DEV</button>
+
 </body>
 </html>

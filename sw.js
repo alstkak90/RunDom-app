@@ -40,8 +40,8 @@ self.addEventListener('fetch', e => {
   // Firebase는 캐시하지 않음 (실시간 데이터)
   if (url.includes('firebaseio.com') || url.includes('firebase')) return;
 
-  // CartoDB 지도 타일: 캐시 우선 (오프라인에서도 이미 본 타일 표시)
-  if (url.includes('basemaps.cartocdn.com') || url.includes('tile.openstreetmap.org')) {
+  // 지도 타일: 캐시 우선 (오프라인에서도 이미 본 타일 표시)
+  if (url.includes('basemaps.cartocdn.com') || url.includes('tile.openstreetmap.org') || url.includes('stadiamaps.com')) {
     e.respondWith(
       caches.open(CACHE).then(c =>
         c.match(e.request).then(cached =>
@@ -65,6 +65,32 @@ self.addEventListener('fetch', e => {
         return resp;
       })
       .catch(() => caches.match(e.request))
+  );
+});
+
+// ── Push 알림 수신 (백그라운드) ───────────────────────────────
+self.addEventListener('push', e => {
+  const data = e.data ? e.data.json() : {};
+  e.waitUntil(
+    self.registration.showNotification(data.title || 'Rundom', {
+      body:    data.body  || '',
+      icon:    '/icons/icon-192.png',
+      badge:   '/icons/icon-192.png',
+      tag:     data.tag   || 'rundom',
+      renotify: true,
+    })
+  );
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const client of list) {
+        if ('focus' in client) return client.focus();
+      }
+      if (clients.openWindow) return clients.openWindow('/');
+    })
   );
 });
 
